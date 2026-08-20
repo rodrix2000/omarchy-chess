@@ -83,13 +83,23 @@ function localActive(moves = []) {
 test("settings defaults validate and merge without mutating the source", () => {
   const defaults = PersistenceModel.defaultSettings()
   assert.equal(PersistenceModel.validateSettings(defaults).ok, true)
+  assert.equal(defaults.appearance.piece_set, "modern")
+  assert.equal(defaults.appearance.board_theme, "charcoal")
+  assert.equal(defaults.appearance.show_legal_moves, true)
+
+  const legacySettings = PersistenceModel.defaultSettings()
+  delete legacySettings.appearance.board_theme
+  delete legacySettings.appearance.show_legal_moves
+  assert.equal(PersistenceModel.validateSettings(legacySettings).ok, true)
 
   const merged = PersistenceModel.mergeSettingsPatch(defaults, {
+    appearance: { show_legal_moves: false },
     audio: { volume: 0.25 },
     accessibility: { reduced_motion: true }
   })
   assert.equal(merged.ok, true)
   assert.equal(merged.value.audio.volume, 0.25)
+  assert.equal(merged.value.appearance.show_legal_moves, false)
   assert.equal(merged.value.accessibility.reduced_motion, true)
   assert.equal(defaults.audio.volume, 0.65)
 })

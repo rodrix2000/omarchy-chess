@@ -18,6 +18,8 @@ Rectangle {
   property bool reducedMotion: false
   property bool showFileLabel: false
   property bool showRankLabel: false
+  property bool showLegalHint: true
+  property bool texturedBackground: false
   property string fileLabel: ""
   property string rankLabel: ""
   property color lightColor: "#d8d9d3"
@@ -28,6 +30,8 @@ Rectangle {
   readonly property string pieceType: piece && (piece.piece || piece.type)
     ? String(piece.piece || piece.type) : ""
   readonly property color markerColor: highContrast ? Color.foreground : Color.accent
+  readonly property bool keyboardCursorOutlineVisible: isCursor && !isSelected
+  readonly property bool legalMoveMarkerVisible: isLegal && showLegalHint
 
   signal activated(string square)
   signal dragStarted(string square, real sceneX, real sceneY)
@@ -45,7 +49,7 @@ Rectangle {
     return parts.join(", ")
   }
 
-  color: isLight ? lightColor : darkColor
+  color: texturedBackground ? "transparent" : isLight ? lightColor : darkColor
   border.width: isChecked ? (highContrast ? 5 : 4)
     : isSelected ? (highContrast ? 4 : 3) : 0
   border.color: isChecked ? Color.urgent : Color.accent
@@ -87,26 +91,51 @@ Rectangle {
     onClicked: root.activated(root.square)
   }
 
-  Rectangle {
+  Item {
     anchors.centerIn: parent
-    width: Math.max(10, parent.width * (root.highContrast ? 0.24 : 0.19))
+    width: Math.max(9, parent.width * (root.highContrast ? 0.2 : 0.16))
     height: width
-    radius: width / 2
-    visible: root.isLegal && !root.isCapture
-    color: root.markerColor
-    border.width: root.highContrast ? 2 : 0
-    border.color: Color.background
+    visible: root.legalMoveMarkerVisible && !root.isCapture
+
+    Rectangle {
+      anchors.fill: parent
+      radius: width / 2
+      color: Qt.rgba(root.markerColor.r, root.markerColor.g,
+                     root.markerColor.b, root.highContrast ? 0.28 : 0.16)
+      border.width: root.highContrast ? 2 : 1
+      border.color: Qt.rgba(root.markerColor.r, root.markerColor.g,
+                            root.markerColor.b, root.highContrast ? 1 : 0.72)
+    }
+
+    Rectangle {
+      anchors.centerIn: parent
+      width: Math.max(4, parent.width * 0.42)
+      height: width
+      radius: width / 2
+      color: root.markerColor
+    }
   }
 
-  Rectangle {
-    anchors.centerIn: parent
-    width: parent.width * (root.highContrast ? 0.72 : 0.64)
-    height: width
-    radius: width / 2
-    visible: root.isLegal && root.isCapture
-    color: "transparent"
-    border.width: root.highContrast ? 5 : 4
-    border.color: root.markerColor
+  Item {
+    id: captureHint
+    anchors.fill: parent
+    anchors.margins: Math.max(5, parent.width * 0.1)
+    visible: root.legalMoveMarkerVisible && root.isCapture
+    opacity: root.highContrast ? 1 : 0.88
+
+    readonly property real stroke: root.highContrast ? 3
+      : Math.max(2, root.width * 0.035)
+    readonly property real arm: Math.max(9, root.width
+      * (root.highContrast ? 0.24 : 0.2))
+
+    Rectangle { anchors.left: parent.left; anchors.top: parent.top; width: captureHint.arm; height: captureHint.stroke; color: root.markerColor; radius: height / 2 }
+    Rectangle { anchors.left: parent.left; anchors.top: parent.top; width: captureHint.stroke; height: captureHint.arm; color: root.markerColor; radius: width / 2 }
+    Rectangle { anchors.right: parent.right; anchors.top: parent.top; width: captureHint.arm; height: captureHint.stroke; color: root.markerColor; radius: height / 2 }
+    Rectangle { anchors.right: parent.right; anchors.top: parent.top; width: captureHint.stroke; height: captureHint.arm; color: root.markerColor; radius: width / 2 }
+    Rectangle { anchors.left: parent.left; anchors.bottom: parent.bottom; width: captureHint.arm; height: captureHint.stroke; color: root.markerColor; radius: height / 2 }
+    Rectangle { anchors.left: parent.left; anchors.bottom: parent.bottom; width: captureHint.stroke; height: captureHint.arm; color: root.markerColor; radius: width / 2 }
+    Rectangle { anchors.right: parent.right; anchors.bottom: parent.bottom; width: captureHint.arm; height: captureHint.stroke; color: root.markerColor; radius: height / 2 }
+    Rectangle { anchors.right: parent.right; anchors.bottom: parent.bottom; width: captureHint.stroke; height: captureHint.arm; color: root.markerColor; radius: width / 2 }
   }
 
   ChessPiece {
@@ -132,20 +161,14 @@ Rectangle {
   }
 
   Rectangle {
+    id: cursorIndicator
     anchors.fill: parent
-    anchors.margins: root.highContrast ? 2 : 3
-    visible: root.isCursor
+    anchors.margins: root.highContrast ? 3 : 4
+    visible: root.keyboardCursorOutlineVisible
     color: "transparent"
-    border.width: root.highContrast ? 4 : 3
-    border.color: Color.foreground
-
-    Rectangle {
-      anchors.fill: parent
-      anchors.margins: root.highContrast ? 5 : 4
-      color: "transparent"
-      border.width: 2
-      border.color: Color.background
-    }
+    radius: Math.max(1, parent.width * 0.04)
+    border.width: root.highContrast ? 3 : 2
+    border.color: root.markerColor
   }
 
   Rectangle {

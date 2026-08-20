@@ -16,10 +16,32 @@ FocusScope {
   property bool reducedMotion: false
   property bool highContrast: false
   property bool showCoordinates: true
+  property bool showLegalMoves: true
+  property string boardTheme: "charcoal"
 
   readonly property int boardSize: Math.max(0, Math.floor(Math.min(width, height)))
-  readonly property color lightSquareColor: mix(Color.background, Color.foreground, 0.18)
-  readonly property color darkSquareColor: mix(Color.background, Color.foreground, 0.38)
+  readonly property string normalizedBoardTheme:
+    /^(charcoal|green|ivory)$/.test(root.boardTheme)
+      ? root.boardTheme : "charcoal"
+  readonly property url boardTextureSource: Qt.resolvedUrl(
+    "../assets/boards/" + root.normalizedBoardTheme + ".png")
+  readonly property rect boardTextureClip: {
+    if (root.normalizedBoardTheme === "green")
+      return Qt.rect(53, 53, 1149, 1149)
+    if (root.normalizedBoardTheme === "ivory")
+      return Qt.rect(30, 30, 1194, 1194)
+    return Qt.rect(39, 43, 1177, 1173)
+  }
+  readonly property color lightSquareColor:
+    root.normalizedBoardTheme === "green" ? "#e0d09f"
+      : root.normalizedBoardTheme === "ivory" ? "#e7c392" : "#c1b8a9"
+  readonly property color darkSquareColor:
+    root.normalizedBoardTheme === "green" ? "#193e1b"
+      : root.normalizedBoardTheme === "ivory" ? "#703e1f" : "#3a3d42"
+  readonly property color boardFrameColor:
+    root.normalizedBoardTheme === "green" ? "#9a783a"
+      : root.normalizedBoardTheme === "ivory" ? "#a86f35" : "#b8a27d"
+  readonly property bool boardTextureReady: boardTexture.status === Image.Ready
   property string draggedSquare: ""
 
   signal squareActivated(string square)
@@ -28,13 +50,6 @@ FocusScope {
   signal flipRequested()
   signal cursorMoved(string square)
   signal cancelRequested()
-
-  function mix(first, second, amount) {
-    var t = Math.max(0, Math.min(1, amount))
-    return Qt.rgba(first.r + (second.r - first.r) * t,
-                   first.g + (second.g - first.g) * t,
-                   first.b + (second.b - first.b) * t, 1)
-  }
 
   function normalizedOrientation() {
     return orientation === "black" ? "black" : "white"
@@ -197,7 +212,21 @@ FocusScope {
     color: Color.background
     border.width: root.highContrast ? 4 : 2
     border.color: root.activeFocus ? Color.accent
-      : Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.42)
+      : root.boardFrameColor
+
+    Image {
+      id: boardTexture
+      width: root.boardSize
+      height: root.boardSize
+      anchors.centerIn: parent
+      source: root.boardTextureSource
+      sourceClipRect: root.boardTextureClip
+      fillMode: Image.Stretch
+      smooth: true
+      mipmap: true
+      asynchronous: true
+      cache: true
+    }
 
     Grid {
       id: boardGrid
@@ -230,6 +259,7 @@ FocusScope {
           isChecked: root.checkedKingSquare === algebraicSquare
           isLegal: legalState.legal
           isCapture: legalState.capture
+          showLegalHint: root.showLegalMoves
           inputEnabled: root.inputEnabled
           highContrast: root.highContrast
           reducedMotion: root.reducedMotion
@@ -239,6 +269,7 @@ FocusScope {
           rankLabel: algebraicSquare.charAt(1)
           lightColor: root.lightSquareColor
           darkColor: root.darkSquareColor
+          texturedBackground: root.boardTextureReady
 
           onActivated: function(square) { root.activateSquare(square) }
           onDragStarted: function(square, sceneX, sceneY) {

@@ -33,6 +33,7 @@ Item {
     { color: "white", type: "knight" }, { color: "black", type: "knight" },
     { color: "white", type: "pawn" }, { color: "black", type: "pawn" }
   ]
+  readonly property var boardThemes: ["charcoal", "green", "ivory"]
 
   ChessPlugin.Service { id: chessService }
 
@@ -62,6 +63,62 @@ Item {
     }
   }
 
+  Repeater {
+    id: boardSamples
+    model: root.boardThemes
+
+    ChessUi.BoardView {
+      required property string modelData
+      width: 64
+      height: 64
+      visible: false
+      boardTheme: modelData
+      showCoordinates: false
+      inputEnabled: false
+    }
+  }
+
+  Repeater {
+    id: homeSamples
+    model: root.layoutCases
+
+    ChessUi.HomeView {
+      required property var modelData
+      width: modelData.width - 40
+      height: modelData.height - 120
+      visible: false
+      compactLayout: modelData.width < 720
+      hasPlayableGame: true
+      historyCount: 3
+      game: ({
+        mode: "computer",
+        difficulty: "casual",
+        turn: "white",
+        status: "paused"
+      })
+    }
+  }
+
+  ChessUi.HomeView {
+    id: emptyHomeSample
+    width: 600
+    height: 440
+    visible: false
+    compactLayout: true
+    hasPlayableGame: false
+  }
+
+  ChessUi.ChessSquare {
+    id: selectionSample
+    width: 64
+    height: 64
+    visible: false
+    square: "e2"
+    piece: ({ square: "e2", color: "white", piece: "pawn" })
+    isSelected: true
+    isCursor: true
+  }
+
   function require(condition, message) {
     if (condition) return
     poll.running = false
@@ -84,6 +141,10 @@ Item {
         "window height did not settle at " + layoutCase.height)
       require(metrics.side_by_side === layoutCase.sideBySide,
         "wrong responsive mode at " + layoutCase.width)
+      require(metrics.board_theme === "charcoal",
+        "legacy/default settings did not resolve to the charcoal board")
+      require(metrics.show_legal_moves === true,
+        "legacy/default settings did not show legal move hints")
       require(metrics.board_size >= layoutCase.minimumBoard,
         "board is too small at " + layoutCase.width + "x" + layoutCase.height)
       require(metrics.board_size <= metrics.viewport_width + 1
@@ -96,20 +157,62 @@ Item {
       measuredBoards.push(metrics.board_size)
       console.log("RESPONSIVE_PANEL_CASE", layoutCase.width,
         layoutCase.height, JSON.stringify(metrics))
+
+      var homeMetrics = homeSamples.itemAt(index).layoutMetrics
+      console.log("RESPONSIVE_HOME_CASE", layoutCase.width,
+        layoutCase.height, JSON.stringify(homeMetrics))
+      require(homeMetrics.cards_columns === (layoutCase.width < 720 ? 1 : 2),
+        "home mode cards use the wrong responsive columns")
+      require(homeMetrics.active_card_visible,
+        "home omitted the active-game card")
+      require(homeMetrics.compact_navigation_visible === (layoutCase.width < 720),
+        "home secondary navigation duplicates or disappears")
+      require(homeMetrics.computer_card_height > 0
+        && homeMetrics.computer_card_height < 210,
+        "computer mode card is not content-sized")
+      require(homeMetrics.local_card_height > 0
+        && homeMetrics.local_card_height < 210,
+        "two-player mode card is not content-sized")
     }
     require(measuredBoards[1] > measuredBoards[0],
       "narrow board did not grow with added height")
     require(measuredBoards[4] > measuredBoards[3],
       "wide board did not grow with the larger viewport")
+    require(!emptyHomeSample.layoutMetrics.active_card_visible,
+      "empty home rendered a resume card")
     for (var pieceIndex = 0; pieceIndex < pieceSamples.count; pieceIndex += 2) {
       var whitePiece = pieceSamples.itemAt(pieceIndex)
       var blackPiece = pieceSamples.itemAt(pieceIndex + 1)
       require(whitePiece.assetReady && blackPiece.assetReady,
         "bundled piece asset did not load")
+      require(whitePiece.highQualityMinification
+        && blackPiece.highQualityMinification,
+        blackPiece.pieceType + " colors do not use mipmapped minification")
       require(Math.abs(whitePiece.renderedPieceHeight
         - blackPiece.renderedPieceHeight) < 0.01,
         blackPiece.pieceType + " colors do not share a visual height")
     }
+    for (var boardIndex = 0; boardIndex < boardSamples.count; boardIndex++) {
+      var boardSample = boardSamples.itemAt(boardIndex)
+      require(boardSample.boardTextureReady,
+        boardSample.boardTheme + " board texture did not load")
+      require(boardSample.normalizedBoardTheme === root.boardThemes[boardIndex],
+        "board theme normalization changed a supported theme")
+    }
+    require(!selectionSample.keyboardCursorOutlineVisible,
+      "keyboard cursor overlaps the selected-piece treatment")
+    selectionSample.isSelected = false
+    require(selectionSample.keyboardCursorOutlineVisible,
+      "keyboard cursor outline disappeared on an unselected square")
+    selectionSample.isLegal = true
+    selectionSample.showLegalHint = false
+    require(!selectionSample.legalMoveMarkerVisible,
+      "hidden legal move hint still renders a marker")
+    require(selectionSample.isLegal,
+      "hiding the legal move marker changed legal-square semantics")
+    selectionSample.showLegalHint = true
+    require(selectionSample.legalMoveMarkerVisible,
+      "shown legal move hint does not render its marker")
     var playingPanel = panels.itemAt(0)
     playingPanel.activateSquare("e2")
     require(playingPanel.selectedSquare === "e2",

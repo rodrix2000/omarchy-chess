@@ -3,6 +3,7 @@ BoardView 1.0 BoardView.qml
 ChessPiece 1.0 ChessPiece.qml
 ChessSquare 1.0 ChessSquare.qml
 ConfirmDialog 1.0 ConfirmDialog.qml
+HomeView 1.0 HomeView.qml
 MoveList 1.0 MoveList.qml
 NewGameDialog 1.0 NewGameDialog.qml
 PlayerClock 1.0 PlayerClock.qml

@@ -391,7 +391,9 @@ function defaultSettings() {
     appearance: {
       coordinates: true,
       orientation: "white",
-      piece_set: "modern"
+      piece_set: "modern",
+      board_theme: "charcoal",
+      show_legal_moves: true
     },
     audio: {
       enabled: true,
@@ -447,10 +449,14 @@ function validateSettings(value) {
   appearance = value.appearance
   if (requireObject(appearance, "$.appearance", errors)) {
     requireKeys(appearance, ["coordinates", "orientation", "piece_set"], "$.appearance", errors)
-    rejectUnknownKeys(appearance, ["coordinates", "orientation", "piece_set"], "$.appearance", errors)
+    rejectUnknownKeys(appearance, ["coordinates", "orientation", "piece_set", "board_theme", "show_legal_moves"], "$.appearance", errors)
     validateBoolean(appearance.coordinates, "$.appearance.coordinates", errors)
     validateEnum(appearance.orientation, ["white", "black", "manual", "auto"], "$.appearance.orientation", errors)
     validateString(appearance.piece_set, "$.appearance.piece_set", errors, 1, 64)
+    if (own(appearance, "board_theme"))
+      validateEnum(appearance.board_theme, ["charcoal", "green", "ivory"], "$.appearance.board_theme", errors)
+    if (own(appearance, "show_legal_moves"))
+      validateBoolean(appearance.show_legal_moves, "$.appearance.show_legal_moves", errors)
   }
 
   audio = value.audio

@@ -2,6 +2,20 @@
 
 All notable user-visible and compatibility changes are recorded here.
 
+## [Unreleased]
+
+### Fixed
+
+- Preserved transparent source padding and enabled mipmapped minification so modern piece outlines remain continuous on smaller boards
+- Prevented the keyboard cursor from drawing a dark inset box over the selected piece
+- Replaced heavy legal-move dots and capture rings with compact destination markers and unobtrusive capture corners
+
+### Added
+
+- Added selectable Charcoal, Green, and Ivory textured chessboards with persisted settings and verified piece contrast
+- Added a persisted setting to show or hide legal destination dots and capture rings without changing move input
+- Redesigned Home as a compact native launcher with an integrated resume card, modern piece icons, player-facing mode copy, and non-duplicated responsive navigation
+
 ## [1.0.3] — 2026-08-20
 
 ### Fixed

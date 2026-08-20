@@ -44,6 +44,7 @@ jobs:
           bash -n scripts/*.sh
           ./scripts/build-chess-vendor.sh --check
           sha256sum -c assets/pieces/SHA256SUMS
+          (cd assets/boards && sha256sum -c SHA256SUMS)
       - name: Secret and runtime-network scan
         run: |
           ! rg -l --hidden -g '!.git/**' -g '!third_party/**' \

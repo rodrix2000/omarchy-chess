@@ -87,7 +87,11 @@ Item {
         root.require(service.lastExportPath.indexOf(root.completedGameId + ".pgn") > 0,
           "default export path does not use the game ID")
         var settings = service.updateSettings({
-          appearance: { coordinates: false },
+          appearance: {
+            coordinates: false,
+            board_theme: "green",
+            show_legal_moves: false
+          },
           audio: { enabled: false }
         })
         root.require(settings.ok, "settings save failed to start: " + settings.code)
@@ -96,6 +100,10 @@ Item {
                  && service.settingsSnapshot.audio.enabled === false) {
         root.require(service.settingsSnapshot.appearance.coordinates === false,
           "settings patch was not merged atomically")
+        root.require(service.settingsSnapshot.appearance.board_theme === "green",
+          "board theme was not persisted through settings")
+        root.require(service.settingsSnapshot.appearance.show_legal_moves === false,
+          "legal move hint preference was not persisted through settings")
         var removed = service.removeHistoryGame(root.completedGameId)
         root.require(removed.ok, "history removal failed to start: " + removed.code)
         root.phase = 9

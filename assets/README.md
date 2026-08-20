@@ -10,6 +10,7 @@ rest of the project and load entirely from the installed plugin.
 | `icon-monochrome.svg` | Single-ink mark for compact bar surfaces | `python3 assets/generate_assets.py` |
 | `icon-256.png` | 256 px marketplace/product preview mark | `python3 assets/generate_assets.py` |
 | `pieces/modern/*.png` | Twelve light/dark modern chess pieces | Canonical 512 px masters; verify with `sha256sum -c assets/pieces/SHA256SUMS` |
+| `boards/*.png` | Charcoal, green, and ivory textured boards | Pixel-preserving sanitized masters; verify with `sha256sum -c assets/boards/SHA256SUMS` |
 | `sounds/*.wav` | Optional move/result cues | `python3 scripts/generate-sounds.py` |
 
 ## Validation
@@ -19,6 +20,7 @@ The following checks are offline and reproducible:
 ```bash
 python3 -m py_compile assets/generate_assets.py scripts/generate-sounds.py
 sha256sum -c assets/pieces/SHA256SUMS
+(cd assets/boards && sha256sum -c SHA256SUMS)
 for svg in assets/icon.svg assets/icon-monochrome.svg; do
   xmllint --noout "$svg"
 done
@@ -27,12 +29,14 @@ file assets/icon-256.png assets/pieces/modern/*.png assets/sounds/*.wav
 
 SVGs intentionally use the standard SVG namespace URL as required by XML;
 they contain no external resource references. The modern pieces are transparent
-indexed PNGs containing only standard image chunks. The UI retains a Unicode
-fallback if a local piece image cannot be loaded.
+indexed PNGs containing only standard image chunks. The three RGB board PNGs
+retain their supplied pixels with nonvisual container metadata removed. The UI
+retains a Unicode fallback if a local piece image cannot be loaded.
 
 ## Preview alt text
 
 The icon is an ivory knight profile over a slate board grid inside an amber
 rounded frame. The modern set shows six dimensional ivory pieces and six
-charcoal pieces with strong contrasting outlines. The sound cues are short,
-quiet interface tones, not music.
+charcoal pieces with strong contrasting outlines. The selectable boards use
+charcoal stone, forest green and cream, or ivory and walnut textures. The sound
+cues are short, quiet interface tones, not music.
