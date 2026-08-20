@@ -1,30 +1,32 @@
 # Piece Assets
 
-`classic/` is the original Omarchy Chess Staunton-inspired set.  The geometry
-was drawn for this project and is intentionally simple enough to remain clear
-at 32 px while still showing a dark outline, light outline, and small interior
-highlight.  White pieces use an ivory fill with a charcoal outline; black
-pieces use a slate fill with an ivory outline.  That distinction remains
-visible on both light and dark board squares and does not depend on color alone.
+`modern/` is the current Omarchy Chess set. Each piece is a 512×512 transparent
+PNG with consistent perspective, dimensional shading, and a high-contrast
+outline. White pieces use an ivory body with a charcoal edge; black pieces use
+a charcoal body with an ivory edge. That distinction remains visible on both
+light and dark board squares and does not depend on color alone.
 
-The SVGs contain only local paths, circles, and a title for accessibility. They
-have no fonts, scripts, event handlers, stylesheets, or external references.
-When an SVG cannot be loaded, the UI uses its documented Unicode fallback.
+The PNGs contain only the standard `IHDR`, `PLTE`, `tRNS`, `IDAT`, and `IEND`
+chunks—no text metadata, scripts, URLs, fonts, or external references. If a
+piece image cannot be loaded, the UI uses its documented Unicode fallback.
 
-## Rebuild
+## Integrity
 
 From the repository root:
 
 ```bash
-python3 assets/generate_assets.py
+sha256sum -c assets/pieces/SHA256SUMS
 ```
 
-The piece source geometry lives in the generator so the twelve checked-in SVGs
-can be recreated offline.  The same command also regenerates the product icon
-SVGs and (when `rsvg-convert` or ImageMagick is installed) the 256 px PNG.
+The checked-in PNGs are the canonical masters and are not recompressed during a
+build. `assets/generate_assets.py` continues to regenerate the product icon
+SVGs and, when `rsvg-convert` or ImageMagick is installed, the 256 px icon PNG.
+It also retains the V1.0.0 classic vector geometry for source-history
+reproducibility, but that retired set is not emitted or shipped.
 
 ## Provenance and license
 
-These are project-owned original assets.  They are distributed under the
-repository MIT License; no third-party artwork or font is embedded.  See
-`THIRD_PARTY_NOTICES.md` for the complete asset provenance record.
+The modern masters were supplied by project owner Rudy Rodriguez for Omarchy
+Chess and are distributed under the repository MIT License. No third-party
+font or network resource is embedded. See `THIRD_PARTY_NOTICES.md` for the
+complete asset provenance record.

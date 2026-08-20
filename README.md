@@ -20,7 +20,7 @@ Built for Omarchy 4 with native QML. No account, API key, external engine, telem
 - Exact autosave, pause-on-close, crash-safe recovery, undo, completed-game history, replay, and PGN export
 - Click, drag, arrow-key, or Vim-style board control
 - Theme-aware surfaces, visible focus, non-color markers, reduced motion, high-contrast indicators, and optional sound
-- Original reproducible piece, icon, and sound assets
+- Original modern piece artwork, reproducible icons, and generated sound assets
 
 ## Install and play
 

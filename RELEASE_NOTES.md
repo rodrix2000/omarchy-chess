@@ -1,4 +1,4 @@
-# Omarchy Chess v1.0.0
+# Omarchy Chess v1.0.1
 
 Omarchy Chess is a complete native, offline chess game for Omarchy: play a friend locally or choose one of four built-in computer profiles, then close and resume the exact saved position without leaving the shell.
 
@@ -9,7 +9,8 @@ Omarchy Chess is a complete native, offline chess game for Omarchy: play a frien
 - Optional clocks, undo, draw, resignation, promotion, and board orientation controls
 - Atomic save/resume, completed-game history, replay, and PGN copy/export
 - Keyboard-complete, theme-aware UI with non-color cues, reduced motion, high contrast, and optional sound
-- Original pieces, icon, sounds, reproducible preview, and 36-second demo
+- New modern twelve-piece artwork with transparent high-resolution masters
+- Updated homepage preview and demo using the same piece component as the game
 
 ## Compatibility
 
@@ -17,7 +18,7 @@ Omarchy Chess is a complete native, offline chess game for Omarchy: play a frien
 - Verified environment: Omarchy `4.0.0-1`, Quickshell `0.3.0.r20.g28771c7`, Qt `6.11.1`
 - State/settings/history/completed-game schema: `1`
 - Rules dependency: `chess.js` `1.4.0`, BSD-2-Clause
-- No migration is required for this first public release
+- No migration is required from v1.0.0
 
 ## Install
 
@@ -42,7 +43,7 @@ Game state remains under `${XDG_STATE_HOME:-$HOME/.local/state}/omarchy-chess` w
 - Real Quickshell service, panel, computer-reply, and history/replay/export journeys
 - 1,000 seeded generated positions across all computer profiles with final legal-move checks
 - Clean Omarchy CLI install, update, remove, reinstall, and retained-state fixture
-- Runtime-network, secret-pattern, symlink, executable, SVG, WAV, license, and reproducibility audits
+- Runtime-network, secret-pattern, symlink, executable, PNG/SVG/WAV, license, checksum, and reproducibility audits
 
 ## Known limitations
 

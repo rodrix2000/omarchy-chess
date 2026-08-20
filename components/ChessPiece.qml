@@ -15,8 +15,8 @@ Item {
   readonly property url resolvedSource: root.source.toString() !== ""
     ? root.source
     : root.hasNamedPiece
-      ? Qt.resolvedUrl("../assets/pieces/classic/" + root.pieceColor
-        + "-" + root.pieceType + ".svg")
+      ? Qt.resolvedUrl("../assets/pieces/modern/" + root.pieceColor
+        + "-" + root.pieceType + ".png")
       : ""
 
   readonly property string accessibleName: {
@@ -51,7 +51,6 @@ Item {
   Image {
     id: asset
     anchors.fill: parent
-    anchors.margins: parent.width * 0.08
     source: root.resolvedSource
     visible: status === Image.Ready
     fillMode: Image.PreserveAspectFit

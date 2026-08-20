@@ -5,7 +5,7 @@ import "../../components" as ChessUi
 
 // A deterministic, non-interactive showcase scene. It uses the same native
 // component catalog as Panel.qml, a curated legal midgame, and the checked-in
-// original SVG pieces. The shell script captures this scene offscreen.
+// shipped modern PNG pieces. The shell script captures this scene offscreen.
 Window {
   id: previewWindow
 
