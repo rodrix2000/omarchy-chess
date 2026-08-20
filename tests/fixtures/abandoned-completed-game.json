@@ -1,0 +1,47 @@
+{
+  "clock": {
+    "black_ms": null,
+    "enabled": false,
+    "increment_ms": 0,
+    "last_started_at": null,
+    "running_side": null,
+    "white_ms": null
+  },
+  "created_at": "2026-08-20T12:00:00.000Z",
+  "difficulty": null,
+  "duration_ms": 0,
+  "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+  "game_id": "fixture-abandoned-restore",
+  "human_color": null,
+  "mode": "local",
+  "moves": [],
+  "orientation": "auto",
+  "pending_draw_offer_by": null,
+  "pgn": "[Event \"Omarchy Chess\"]\n[Site \"Local\"]\n[Date \"2026.08.20\"]\n[Round \"-\"]\n[White \"White\"]\n[Black \"Black\"]\n[Result \"*\"]\n[TimeControl \"-\"]\n[Termination \"abandoned\"]\n[Mode \"Local\"]\n[PluginVersion \"1.0.1\"]\n\n*\n",
+  "players": {
+    "black": {
+      "kind": "human",
+      "name": "Black"
+    },
+    "white": {
+      "kind": "human",
+      "name": "White"
+    }
+  },
+  "plugin_version": "1.0.1",
+  "position_counts": {
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -": 1
+  },
+  "result": {
+    "finished_at": "2026-08-20T12:00:00.000Z",
+    "reason": "abandoned",
+    "score": "*"
+  },
+  "schema_version": 1,
+  "status": "abandoned",
+  "time_control": {
+    "base_ms": null,
+    "increment_ms": 0
+  },
+  "updated_at": "2026-08-20T12:00:00.000Z"
+}

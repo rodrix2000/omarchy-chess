@@ -35,8 +35,12 @@ root = Path.cwd()
 manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
 assert manifest["schemaVersion"] == 1
 assert manifest["id"] == "io.github.rodrix2000.chess"
-assert manifest["version"] == "1.0.1"
+assert manifest["version"] == "1.0.2"
 assert set(manifest["kinds"]) == {"service", "panel", "bar-widget"}
+version = manifest["version"]
+assert f'var PLUGIN_VERSION = "{version}"' in (root / "engine/GameController.js").read_text(encoding="utf-8")
+assert f'var DEFAULT_PLUGIN_VERSION = "{version}"' in (root / "engine/PersistenceModel.js").read_text(encoding="utf-8")
+assert f'? String(manifest.version) : "{version}"' in (root / "Service.qml").read_text(encoding="utf-8")
 for required in (
     "README.md", "LICENSE", "SECURITY.md", "CHANGELOG.md",
     "THIRD_PARTY_NOTICES.md", "preview.png",
@@ -169,7 +173,7 @@ tar -C "$ROOT" --exclude=.git --exclude='*.pyc' -cf - . | tar -C "$source_work" 
 git -C "$source_work" init -q -b main
 git -C "$source_work" add .
 git -C "$source_work" -c user.name='Release Check' \
-  -c user.email='release-check@invalid.local' commit -q -m 'v1.0.1 fixture'
+  -c user.email='release-check@invalid.local' commit -q -m 'v1.0.2 fixture'
 git clone -q --bare "$source_work" "$origin_repo"
 
 printf '%s\n' \
@@ -220,4 +224,4 @@ print(f"valid: demo duration {duration:.2f}s")
 PY
 fi
 
-pass "Omarchy Chess v1.0.1 release candidate"
+pass "Omarchy Chess v1.0.2 release candidate"

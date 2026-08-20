@@ -2,6 +2,19 @@
 
 All notable user-visible and compatibility changes are recorded here.
 
+## [1.0.2] — 2026-08-20
+
+### Fixed
+
+- Prevented the service from remaining on “Saving…” when startup retries an already-archived abandoned game whose history index is unchanged
+- Added a real Quickshell restore journey covering canonical unchanged history and pre-existing archive files
+- Kept manifest, diagnostics, help text, PGN, and persisted-game version metadata synchronized
+
+### Compatibility
+
+- No gameplay, rules, persistence schema, or state-path changes
+- Existing `1.0.0` and `1.0.1` state resumes without migration
+
 ## [1.0.1] — 2026-08-20
 
 ### Changed
@@ -60,5 +73,6 @@ All notable user-visible and compatibility changes are recorded here.
 - No migration is needed for the first public release
 - Runtime dependency: the Omarchy/Quickshell environment only; no user-installed engine or build tool
 
+[1.0.2]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.2
 [1.0.1]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.1
 [1.0.0]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.0

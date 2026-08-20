@@ -11,7 +11,7 @@
 var configuredDependencies = null
 var ORTHODOX_START_FEN =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-var PLUGIN_VERSION = "1.0.0"
+var PLUGIN_VERSION = "1.0.2"
 var gameSequence = 0
 
 if (typeof module !== "undefined" && module.exports && typeof require === "function") {
