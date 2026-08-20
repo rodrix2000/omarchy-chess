@@ -22,7 +22,8 @@ Item {
       : ""
   readonly property rect assetBounds: boundsFor(root.pieceColor, root.pieceType)
   readonly property rect whiteTargetBounds: boundsFor("white", root.pieceType)
-  readonly property bool assetReady: asset.status === Image.Ready
+  readonly property bool assetReady: Boolean(asset
+    && asset.status === Image.Ready)
   readonly property real renderedPieceHeight: root.usesBundledPiece
     ? root.height * root.whiteTargetBounds.height / 512 : root.height
   readonly property real bundledAssetScale: root.usesBundledPiece
@@ -96,7 +97,7 @@ Item {
     width: root.usesBundledPiece ? 512 * root.bundledAssetScale : root.width
     height: root.usesBundledPiece ? 512 * root.bundledAssetScale : root.height
     source: root.resolvedSource
-    visible: status === Image.Ready
+    visible: root.assetReady
     fillMode: Image.PreserveAspectFit
     smooth: true
     mipmap: root.usesBundledPiece

@@ -1303,6 +1303,22 @@ function removeHistorySummary(history, gameId) {
   return success(next, { removed: removed, idempotent: !removed })
 }
 
+function clearHistorySummary(history) {
+  var validation = validateHistory(history)
+  var gameIds = []
+  var index
+
+  if (!validation.ok)
+    return validation
+  for (index = 0; index < history.games.length; index += 1)
+    gameIds.push(history.games[index].game_id)
+  return success(defaultHistory(), {
+    removed_count: gameIds.length,
+    game_ids: gameIds,
+    idempotent: gameIds.length === 0
+  })
+}
+
 function toPgn(record) {
   var validation = validateCompletedRecord(record)
 
@@ -1327,6 +1343,7 @@ var PersistenceModel = {
   migrateHistory: migrateHistory,
   appendHistorySummary: appendHistorySummary,
   removeHistorySummary: removeHistorySummary,
+  clearHistorySummary: clearHistorySummary,
   createCompletedRecord: createCompletedRecord,
   validateCompletedRecord: validateCompletedRecord,
   migrateCompletedRecord: migrateCompletedRecord,

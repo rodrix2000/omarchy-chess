@@ -296,6 +296,11 @@ Item {
       confirmDialog.message = "Its local JSON record and PGN file will be removed. This cannot be undone."
       confirmDialog.confirmText = "Delete saved game"
       confirmDialog.destructive = true
+    } else if (action === "clear-history") {
+      confirmDialog.title = "Clear all game history?"
+      confirmDialog.message = "Every completed-game record and PGN in History will be removed. Your active game and settings will stay untouched. This cannot be undone."
+      confirmDialog.confirmText = "Clear history"
+      confirmDialog.destructive = true
     } else if (action === "reset-settings") {
       confirmDialog.title = "Reset all chess settings?"
       confirmDialog.message = "Gameplay and accessibility defaults will reset. Active games and history stay untouched."
@@ -334,6 +339,9 @@ Item {
       if (invoke(service.removeHistoryGame(pendingHistoryId), "Deleting saved game…"))
         currentView = "history"
       pendingHistoryId = ""
+    } else if (confirmAction === "clear-history") {
+      if (invoke(service.clearHistory(), "Clearing game history…"))
+        currentView = "history"
     } else if (confirmAction === "reset-settings") {
       invoke(service.resetSettings(), "Resetting settings…")
     }
@@ -343,6 +351,11 @@ Item {
   function titleCase(value) {
     var text = String(value || "")
     return text.length ? text.charAt(0).toUpperCase() + text.slice(1) : ""
+  }
+
+  function moveCountLabel(plyCount) {
+    var moves = Math.ceil(Math.max(0, Number(plyCount || 0)) / 2)
+    return moves + (moves === 1 ? " move" : " moves")
   }
 
   function pieceAt(square) {
@@ -988,7 +1001,7 @@ Item {
           kind: root.game.persistence_healthy === false ? "error" : root.game.in_check ? "warning" : root.gameStatus === "active-computer" ? "thinking" : root.gameStatus === "paused" ? "paused" : "info"
           iconText: root.game.in_check ? "!" : root.gameStatus === "active-computer" ? "…" : ""
         }
-        ChessUi.MoveList { Layout.fillWidth: true; Layout.fillHeight: true; visible: !root.compactLayout; moves: root.game.moves || []; selectedPly: root.game.moves ? root.game.moves.length : 0; replayMode: false; followLatest: true; emptyText: "Moves will appear here" }
+        ChessUi.MoveList { Layout.fillWidth: true; Layout.fillHeight: true; visible: !root.compactLayout && root.gameStatus !== "completed" && root.gameStatus !== "abandoned"; moves: root.game.moves || []; selectedPly: root.game.moves ? root.game.moves.length : 0; replayMode: false; followLatest: true; emptyText: "Moves will appear here" }
         ColumnLayout {
           Layout.fillWidth: true
           visible: root.wideLayout
@@ -1013,10 +1026,10 @@ Item {
         Flow {
           Layout.fillWidth: true; spacing: 6
           ChessUi.SecondaryButton { text: "Flip"; accessibleDescription: "Flip the board orientation"; onClicked: root.flipBoard() }
-          ChessUi.SecondaryButton { text: "Undo"; accessibleDescription: "Request to take back moves"; onClicked: root.openConfirmation("undo") }
-          ChessUi.SecondaryButton { text: "Draw"; selected: root.drawActionsOpen; accessibleDescription: "Open draw actions"; onClicked: root.drawActionsOpen = !root.drawActionsOpen }
-          ChessUi.SecondaryButton { text: root.gameStatus === "paused" ? "Resume" : "Pause"; accessibleDescription: root.gameStatus === "paused" ? "Resume the paused game" : "Pause the game"; onClicked: { if (root.gameStatus === "paused") root.invoke(root.service.resumeGame()); else root.invoke(root.pauseCurrentGame("user")) } }
-          ChessUi.SecondaryButton { text: "Resign"; destructive: true; accessibleDescription: "Resign the current game"; onClicked: root.openConfirmation("resign") }
+          ChessUi.SecondaryButton { visible: root.hasPlayableGame; text: "Undo"; accessibleDescription: "Request to take back moves"; onClicked: root.openConfirmation("undo") }
+          ChessUi.SecondaryButton { visible: root.hasPlayableGame; text: "Draw"; selected: root.drawActionsOpen; accessibleDescription: "Open draw actions"; onClicked: root.drawActionsOpen = !root.drawActionsOpen }
+          ChessUi.SecondaryButton { visible: root.hasPlayableGame; text: root.gameStatus === "paused" ? "Resume" : "Pause"; accessibleDescription: root.gameStatus === "paused" ? "Resume the paused game" : "Pause the game"; onClicked: { if (root.gameStatus === "paused") root.invoke(root.service.resumeGame()); else root.invoke(root.pauseCurrentGame("user")) } }
+          ChessUi.SecondaryButton { visible: root.hasPlayableGame; text: "Resign"; destructive: true; accessibleDescription: "Resign the current game"; onClicked: root.openConfirmation("resign") }
           ChessUi.SecondaryButton { visible: !root.compactLayout; text: "Copy PGN"; accessibleDescription: "Copy the current game as PGN"; onClicked: root.invoke(root.service.copyPgn(root.game.game_id), "PGN copied.") }
           ChessUi.SecondaryButton { visible: !root.compactLayout; text: "Save PGN"; accessibleDescription: "Save a PGN copy in the local exports folder"; onClicked: root.invoke(root.service.exportPgn(root.game.game_id, ""), "Saving PGN…") }
         }
@@ -1052,7 +1065,7 @@ Item {
         ColumnLayout {
           Layout.fillWidth: true; visible: root.gameStatus === "completed" && !root.resultDialogDismissed; spacing: 7
           Text { Layout.fillWidth: true; text: root.resultTitle(); color: Color.foreground; font.pixelSize: 17; font.weight: Font.DemiBold; wrapMode: Text.WordWrap }
-          Text { Layout.fillWidth: true; text: (root.game.result && root.game.result.score ? root.game.result.score : "") + " · " + String(root.game.moves ? root.game.moves.length : 0) + " moves"; color: Color.muted; font.pixelSize: 12 }
+          Text { Layout.fillWidth: true; text: (root.game.result && root.game.result.score ? root.game.result.score : "") + " · " + root.moveCountLabel(root.game.moves ? root.game.moves.length : 0); color: Color.muted; font.pixelSize: 12 }
           RowLayout {
             Layout.fillWidth: true
             ChessUi.PrimaryButton { Layout.fillWidth: true; text: "New game"; accessibleDescription: "Set up another game"; onClicked: root.openNewGameDialog(root.game.mode || "computer", ({})) }
@@ -1083,7 +1096,7 @@ Item {
             ColumnLayout {
               Layout.fillWidth: true; spacing: 2
               Text { text: historyRow.modelData.white + " — " + historyRow.modelData.black; color: Color.foreground; font.pixelSize: 14; font.weight: Font.Medium; elide: Text.ElideRight; Layout.fillWidth: true }
-              Text { text: root.titleCase(historyRow.modelData.mode) + " · " + historyRow.modelData.move_count + " moves · " + historyRow.modelData.reason; color: Color.muted; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true }
+              Text { text: root.titleCase(historyRow.modelData.mode) + " · " + root.moveCountLabel(historyRow.modelData.move_count) + " · " + historyRow.modelData.reason; color: Color.muted; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true }
             }
             Text { text: historyRow.modelData.score; color: Color.accent; font.pixelSize: 17; font.weight: Font.DemiBold }
             ChessUi.PrimaryButton {
@@ -1103,7 +1116,19 @@ Item {
           }
         }
       }
-      ChessUi.PrimaryButton { visible: root.hasPlayableGame; text: "Return to active game"; accessibleDescription: "Return to the current game"; onClicked: root.currentView = "game" }
+      RowLayout {
+        Layout.fillWidth: true
+        ChessUi.PrimaryButton { visible: root.hasPlayableGame; text: "Return to active game"; accessibleDescription: "Return to the current game"; onClicked: root.currentView = "game" }
+        Item { Layout.fillWidth: true }
+        ChessUi.SecondaryButton {
+          visible: root.service && root.service.historySummary
+            && root.service.historySummary.total > 0
+          text: "Clear history"
+          destructive: true
+          accessibleDescription: "Clear every completed game after confirmation"
+          onClicked: root.openConfirmation("clear-history")
+        }
+      }
     }
   }
 
@@ -1366,7 +1391,7 @@ Item {
         }
         ChessUi.StatusBanner { Layout.fillWidth: true; text: "Special moves"; detail: "Castling moves the king and rook together when the path is clear and safe. En passant is offered only on the immediately following move. Promotion lets you choose Queen, Rook, Bishop, or Knight with Q/R/B/N."; kind: "info"; iconText: "♔" }
         ChessUi.StatusBanner { Layout.fillWidth: true; text: "Draws and endings"; detail: "Threefold repetition and the fifty-move rule must be claimed. Stalemate, impossible checkmate, fivefold repetition, and seventy-five moves are automatic. Local players can also agree to a draw."; kind: "info"; iconText: "=" }
-        ChessUi.StatusBanner { Layout.fillWidth: true; text: "Computer levels"; detail: "Learner gives room to practice; Casual spots simple tactics; Challenging searches deeper; Strong uses the largest safe local budget. These are descriptions, not Elo ratings."; kind: "info"; iconText: "♞" }
+        ChessUi.StatusBanner { Layout.fillWidth: true; text: "Computer levels"; detail: "Learner varies safe-looking moves; Casual is steadier; Challenging narrows its choices and thinks longer; Strong adds tactical replies with the largest safe local budget. These are descriptions, not Elo ratings."; kind: "info"; iconText: "♞" }
         ChessUi.StatusBanner { Layout.fillWidth: true; text: "Clocks, saving, and history"; detail: "An increment is added after each legal move. Closing pauses clocks and autosaves. Completed games are archived as portable PGN and can be replayed from History."; kind: "info"; iconText: "◷" }
         ChessUi.StatusBanner { Layout.fillWidth: true; text: "Private and offline"; detail: "No account, network request, telemetry, external chess engine, or cloud storage is used. Game files remain in your XDG state directory."; kind: "info"; iconText: "●" }
         Text { Layout.fillWidth: true; text: "Omarchy Chess " + root.service.pluginVersion + " · MIT License · chess.js 1.4.0 (BSD-2-Clause)\nState: " + root.service.stateDirectory; color: Color.muted; font.pixelSize: 11; wrapMode: Text.WordWrap }

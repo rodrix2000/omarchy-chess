@@ -2,6 +2,8 @@
 
 The checked-in WAVs are short, original cues for `move`, `capture`, `castle`,
 `check`, `victory`, `draw`, and `timeout`.  `victory.wav` is the result/win cue.
+The in-game check alert uses a warm, descending two-note chime so it remains
+distinct from move sounds without becoming harsh during repeated checks.
 They are optional presentation only: sound failure, disabled sound, or a
 missing file never affects chess state or move legality.
 

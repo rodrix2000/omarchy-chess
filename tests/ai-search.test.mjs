@@ -3,6 +3,7 @@ import test from "node:test"
 import { createRequire } from "node:module"
 
 const require = createRequire(import.meta.url)
+const DifficultyProfiles = require("../engine/DifficultyProfiles.js")
 const RulesAdapter = require("../engine/RulesAdapter.js")
 const SearchEngine = require("../engine/SearchEngine.js")
 
@@ -90,6 +91,65 @@ test("expired deadline preserves a legal deterministic fallback", () => {
   assert.equal(first.limited_by, "deadline")
   assert.ok(position.legalMoves({ verbose: false }).includes(first.uci))
   assert.equal(second.uci, first.uci)
+})
+
+test("shipping levels complete a first pass before spending extra think time", () => {
+  const position = rules("r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3")
+
+  for (const profile of DifficultyProfiles.named()) {
+    const result = SearchEngine.search(request(position, profile), immediateDeadline())
+    assert.equal(result.ok, true, profile.id)
+    assert.ok(result.depth >= 1, `${profile.id} fell back before its first pass`)
+    assert.ok(position.legalMoves({ verbose: false }).includes(result.uci))
+  }
+})
+
+test("shipping difficulty resources and move selectivity increase in order", () => {
+  const profiles = DifficultyProfiles.named()
+
+  assert.deepEqual(profiles.map((profile) => profile.id),
+    ["learner", "casual", "challenging", "strong"])
+  for (let index = 1; index < profiles.length; index += 1) {
+    const easier = profiles[index - 1]
+    const harder = profiles[index]
+    assert.ok(harder.budget_ms > easier.budget_ms)
+    assert.ok(harder.max_depth > easier.max_depth)
+    assert.ok(harder.quiescence_depth >= easier.quiescence_depth)
+    assert.ok(harder.table_entries > easier.table_entries)
+    assert.ok(harder.node_limit > easier.node_limit)
+    assert.ok(harder.centipawn_window < easier.centipawn_window)
+    assert.ok(harder.safety_floor_cp < easier.safety_floor_cp)
+    assert.ok(harder.temperature < easier.temperature)
+  }
+})
+
+test("best-only root pruning agrees with an exact two-ply root search", () => {
+  const position = rules()
+  const common = {
+    id: "strong",
+    budget_ms: 5000,
+    max_depth: 2,
+    quiescence_depth: 0,
+    node_limit: 500000,
+    centipawn_window: 0,
+    safety_floor_cp: 0
+  }
+  const pruned = SearchEngine.search(request(position, {
+    ...common,
+    temperature: 0
+  }), { now: () => 0, check_interval: 1 })
+  const exact = SearchEngine.search(request(position, {
+    ...common,
+    temperature: 0.000001
+  }), { now: () => 0, random: () => 0, check_interval: 1 })
+
+  assert.equal(pruned.ok, true)
+  assert.equal(exact.ok, true)
+  assert.equal(pruned.depth, 2)
+  assert.equal(exact.depth, 2)
+  assert.equal(pruned.uci, exact.uci)
+  assert.equal(pruned.score_cp, exact.score_cp)
+  assert.ok(pruned.nodes < exact.nodes)
 })
 
 test("same position, profile, and seed is reproducible", () => {

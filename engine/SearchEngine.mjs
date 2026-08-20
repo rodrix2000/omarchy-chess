@@ -229,7 +229,8 @@ function searchCheckBudget(context, force) {
     throw searchAbort("node_limit")
   if (searchCancelled(context.runtime, context.token))
     throw searchAbort("cancelled")
-  if (force || context.nodes % context.check_interval === 0) {
+  if (!context.ignore_deadline &&
+      (force || context.nodes % context.check_interval === 0)) {
     if (context.now() >= context.deadline_ms)
       throw searchAbort("deadline")
   }
@@ -427,12 +428,20 @@ function negamax(position, depth, alpha, beta, ply, context) {
 function searchRoot(position, rootMoves, depth, context) {
   var candidates = []
   var ordered = searchOrderMoves(rootMoves, context.previous_best, context, 0)
+  var bestOnly = context.profile.temperature <= 0
+  var rootAlpha = -SEARCH_INFINITY
   var index
+
+  /* Deterministic Strong play only needs the exact best move. Carrying root
+   * alpha lets later branches cut off; exact candidates win score ties so a
+   * bounded fail-low result can never displace the proven best move. */
 
   for (index = 0; index < ordered.length; index += 1) {
     var committed
     var repetitionKey
     var child
+    var score
+    var exact = !bestOnly || index === 0
 
     searchCheckBudget(context, true)
     committed = position.commitMove(ordered[index].uci)
@@ -440,21 +449,30 @@ function searchRoot(position, rootMoves, depth, context) {
       continue
     repetitionKey = searchPushPosition(position, context)
     try {
-      child = negamax(position, depth - 1, -SEARCH_INFINITY, SEARCH_INFINITY, 1, context)
+      child = negamax(position, depth - 1, -SEARCH_INFINITY,
+        bestOnly ? -rootAlpha : SEARCH_INFINITY, 1, context)
     } finally {
       searchPopPosition(repetitionKey, context)
       position.undo()
     }
+    score = -child.score
+    if (bestOnly && score > rootAlpha) {
+      rootAlpha = score
+      exact = true
+    }
     candidates.push({
       uci: ordered[index].uci,
-      score: -child.score,
-      pv: [ordered[index].uci].concat(child.pv)
+      score: score,
+      pv: [ordered[index].uci].concat(child.pv),
+      exact: exact
     })
   }
 
   candidates.sort(function (left, right) {
     if (right.score !== left.score)
       return right.score - left.score
+    if (left.exact !== right.exact)
+      return left.exact ? -1 : 1
     return left.uci < right.uci ? -1 : (left.uci > right.uci ? 1 : 0)
   })
   return candidates
@@ -534,10 +552,16 @@ function iterativeDeepening(position, context) {
   for (depth = 1; depth <= context.profile.max_depth; depth += 1) {
     var candidates
 
+    /* Normal untimed profiles get one complete root pass. Without it a busy
+     * position can exhaust the budget on the first ordered capture and make
+     * every difficulty return the same fallback. Clock-emergency budgets stay
+     * hard-bounded because they do not enable this minimum. */
+    context.ignore_deadline = context.guarantee_first_depth && depth === 1
     try {
       searchCheckBudget(context, true)
       candidates = searchRoot(position, rootMoves, depth, context)
     } catch (error) {
+      context.ignore_deadline = false
       if (!searchIsAbort(error))
         throw error
       if (error.reason === "cancelled")
@@ -545,6 +569,7 @@ function iterativeDeepening(position, context) {
       limitedBy = error.reason
       break
     }
+    context.ignore_deadline = false
     if (candidates.length > 0) {
       completedCandidates = candidates
       completedDepth = depth
@@ -663,6 +688,8 @@ function search(request, runtime) {
     killers: {},
     previous_best: "",
     age: 1,
+    guarantee_first_depth: budget >= 80,
+    ignore_deadline: false,
     random: typeof environment.random === "function"
       ? environment.random
       : searchSeededRandom(input.seed)

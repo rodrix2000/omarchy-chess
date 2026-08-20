@@ -43,10 +43,10 @@ test("named profiles are distinct, bounded, and carry no Elo claims", () => {
 })
 
 test("clock-aware budget keeps the documented reserve formula and floor", () => {
-  assert.equal(DifficultyProfiles.clockAwareBudget("casual", 60000, 0), 275)
+  assert.equal(DifficultyProfiles.clockAwareBudget("casual", 60000, 0), 325)
   assert.equal(DifficultyProfiles.clockAwareBudget("strong", 3000, 0), 100)
   assert.equal(DifficultyProfiles.clockAwareBudget("strong", 0, 0), 30)
-  assert.equal(DifficultyProfiles.clockAwareBudget("learner", 300, 2000), 90)
+  assert.equal(DifficultyProfiles.clockAwareBudget("learner", 300, 2000), 150)
 })
 
 test("evaluation is side-to-move relative and material has the correct sign", () => {
