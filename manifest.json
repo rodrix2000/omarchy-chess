@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.rodrix2000.chess",
+  "name": "Omarchy Chess",
+  "version": "1.0.0",
+  "author": "Rudy Rodriguez",
+  "license": "MIT",
+  "description": "Native, theme-aware chess for Omarchy with computer and local two-player modes.",
+  "homepage": "https://github.com/rodrix2000/omarchy-chess",
+  "repository": "https://github.com/rodrix2000/omarchy-chess",
+  "keywords": [
+    "chess",
+    "game",
+    "board-game",
+    "computer-opponent",
+    "local-multiplayer",
+    "offline"
+  ],
+  "kinds": [
+    "service",
+    "panel",
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "service": "Service.qml",
+    "panel": "Panel.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Omarchy Chess",
+    "description": "Start, resume, and monitor a local chess game.",
+    "category": "Games",
+    "aliases": [
+      "chess",
+      "game",
+      "board"
+    ],
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "displayMode": "auto",
+      "showTurn": true,
+      "showClock": true,
+      "showResult": true
+    },
+    "schema": [
+      {
+        "key": "displayMode",
+        "type": "string",
+        "label": "Bar display mode"
+      },
+      {
+        "key": "showTurn",
+        "type": "boolean",
+        "label": "Show whose turn it is"
+      },
+      {
+        "key": "showClock",
+        "type": "boolean",
+        "label": "Show active clock when space allows"
+      },
+      {
+        "key": "showResult",
+        "type": "boolean",
+        "label": "Show the latest result"
+      }
+    ]
+  }
+}

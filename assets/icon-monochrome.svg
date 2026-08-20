@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="asset-title">
+  <title id="asset-title">Omarchy Chess</title>
+  <rect x="18" y="18" width="220" height="220" rx="48" fill="none" stroke="#f4f0e6" stroke-width="10"/>
+  <path d="M48 58 H100 V110 H48 Z M100 110 H152 V162 H100 Z M152 58 H204 V110 H152 Z M48 162 H100 V214 H48 Z M152 162 H204 V214 H152 Z" fill="#f4f0e6"/>
+  <path d="M78 201 C84 187 95 175 102 162 C109 149 109 138 103 126 C97 114 86 104 81 92 C75 77 83 63 98 55 C114 46 136 49 149 60 L166 75 L146 83 L157 98 L137 106 C126 111 120 123 122 136 C124 151 142 174 160 201 Z" fill="#f4f0e6"/>
+  <circle cx="116" cy="73" r="5" fill="none" stroke="#f4f0e6" stroke-width="5"/>
+</svg>

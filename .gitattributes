@@ -1,0 +1,5 @@
+# Preserve exact upstream/generated vendor bytes; their mixed indentation is
+# covered by pinned hashes and reproducible generation checks.
+third_party/chess.js/upstream/** -whitespace
+third_party/chess.js/qml/chess.js -whitespace
+engine/ChessVendor.mjs -whitespace

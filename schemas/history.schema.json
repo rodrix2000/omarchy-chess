@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rodrix2000/omarchy-chess/schemas/history.schema.json",
+  "title": "Omarchy Chess History Index",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "games"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "games": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "game_id",
+          "mode",
+          "white",
+          "black",
+          "score",
+          "reason",
+          "move_count",
+          "started_at",
+          "finished_at",
+          "pgn_path",
+          "record_path"
+        ],
+        "properties": {
+          "game_id": {
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "computer",
+              "local"
+            ]
+          },
+          "white": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "black": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "score": {
+            "enum": [
+              "1-0",
+              "0-1",
+              "1/2-1/2"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "move_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "difficulty": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "time_control": {
+            "type": "string"
+          },
+          "pgn_path": {
+            "type": "string"
+          },
+          "record_path": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

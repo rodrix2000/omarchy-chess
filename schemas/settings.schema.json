@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rodrix2000/omarchy-chess/schemas/settings.schema.json",
+  "title": "Omarchy Chess Settings",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "gameplay",
+    "appearance",
+    "audio",
+    "accessibility"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "gameplay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "last_mode",
+        "computer_level",
+        "human_color",
+        "time_control",
+        "pause_when_closed"
+      ],
+      "properties": {
+        "last_mode": {
+          "enum": [
+            "computer",
+            "local"
+          ]
+        },
+        "computer_level": {
+          "enum": [
+            "learner",
+            "casual",
+            "challenging",
+            "strong",
+            "custom"
+          ]
+        },
+        "human_color": {
+          "enum": [
+            "white",
+            "black",
+            "random"
+          ]
+        },
+        "time_control": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "base_ms",
+            "increment_ms"
+          ],
+          "properties": {
+            "base_ms": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "increment_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3600000
+            }
+          }
+        },
+        "pause_when_closed": {
+          "type": "boolean"
+        },
+        "allow_computer_undo": {
+          "type": "boolean"
+        }
+      }
+    },
+    "appearance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coordinates",
+        "orientation",
+        "piece_set"
+      ],
+      "properties": {
+        "coordinates": {
+          "type": "boolean"
+        },
+        "orientation": {
+          "enum": [
+            "white",
+            "black",
+            "manual",
+            "auto"
+          ]
+        },
+        "piece_set": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      }
+    },
+    "audio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "volume"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "volume": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "accessibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reduced_motion",
+        "high_contrast_indicators"
+      ],
+      "properties": {
+        "reduced_motion": {
+          "type": "boolean"
+        },
+        "high_contrast_indicators": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

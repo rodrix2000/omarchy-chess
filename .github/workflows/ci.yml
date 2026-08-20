@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Validate JSON and release metadata
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          manifest = json.loads(Path("manifest.json").read_text())
+          assert manifest["version"] == "1.0.0"
+          for path in Path("schemas").glob("*.json"):
+              json.loads(path.read_text())
+          if os.environ["GITHUB_REF_TYPE"] == "tag":
+              assert os.environ["GITHUB_REF_NAME"] == "v" + manifest["version"]
+          PY
+          test -f preview.png
+          test -f demo.mp4
+          test -f third_party/chess.js/LICENSE
+          test -z "$(find . -name .git -prune -o -type l -print -quit)"
+          test -z "$(find . -name .git -prune -o -type f \( -name '*.pyc' -o -name '*.bak' \) -print -quit)"
+      - name: Validate generated dependency and shell scripts
+        run: |
+          bash -n scripts/*.sh
+          ./scripts/build-chess-vendor.sh --check
+      - name: Secret and runtime-network scan
+        run: |
+          ! rg -l --hidden -g '!.git/**' -g '!third_party/**' \
+            'AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|-----BEGIN ([A-Z0-9 ]+ )?PRIVATE KEY-----' .
+          ! rg -l 'QtWebEngine|WebView|XMLHttpRequest|WebSocket|fetch[[:space:]]*\(' \
+            Service.qml Panel.qml BarWidget.qml PersistenceStore.qml components engine \
+            -g '*.qml' -g '*.js' -g '*.mjs' -g '!ChessVendor.mjs'
+      - name: Run unit, rules, AI, and quick perft suites
+        run: node --test tests/*.test.mjs
+      - name: Run release-depth perft on tags and manual dispatch
+        if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
+        run: node tests/perft-release.mjs

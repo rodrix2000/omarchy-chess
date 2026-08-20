@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="asset-title">
+  <title id="asset-title">Omarchy Chess classic white queen</title>
+  <g><path d="M13 94 C13 90 17 88 23 86 L27 83 H73 L77 86 C83 88 87 90 87 94 V95 H13 Z" fill="#f3f0e7" stroke="#1d232b" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M28 84 C29 79 30 74 35 69 H65 C70 74 71 79 72 84 Z" fill="#f3f0e7" stroke="#1d232b" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M26 70 Q26 67 31 64 H69 Q74 67 74 70 Z" fill="#f3f0e7" stroke="#1d232b" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M31 64 L29 52 L34 27 L42 44 L50 21 L58 44 L66 27 L71 52 L69 64 Z" fill="#f3f0e7" stroke="#1d232b" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="34" cy="27" r="3" fill="#f3f0e7" stroke="#1d232b" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="50" cy="21" r="3" fill="#f3f0e7" stroke="#1d232b" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="66" cy="27" r="3" fill="#f3f0e7" stroke="#1d232b" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M35 53 H65 M39 59 H61" fill="none" stroke="#fffdf7" stroke-width="1.6" stroke-linecap="round" opacity="0.78"/></g>
+</svg>

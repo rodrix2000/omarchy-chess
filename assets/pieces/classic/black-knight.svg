@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="asset-title">
+  <title id="asset-title">Omarchy Chess classic black knight</title>
+  <g><path d="M13 94 C13 90 17 88 23 86 L27 83 H73 L77 86 C83 88 87 90 87 94 V95 H13 Z" fill="#29313b" stroke="#f4f0e6" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M28 84 C29 79 30 74 35 69 H65 C70 74 71 79 72 84 Z" fill="#29313b" stroke="#f4f0e6" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M26 70 Q26 67 31 64 H69 Q74 67 74 70 Z" fill="#29313b" stroke="#f4f0e6" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M34 65 C37 57 43 52 45 46 C47 41 42 34 39 29 C36 24 39 18 45 15 C51 12 59 14 63 18 L69 25 L63 28 L66 33 L59 36 C55 39 52 44 54 50 C56 55 61 60 66 65 Z" fill="#29313b" stroke="#f4f0e6" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M45 16 L51 29 L59 22" fill="none" stroke="#657080" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="56" cy="24" r="2.2" fill="#657080" stroke="#f4f0e6" stroke-width="1"/>
+  <path d="M42 57 C48 54 52 54 57 56" fill="none" stroke="#657080" stroke-width="1.6" stroke-linecap="round" opacity="0.78"/></g>
+</svg>

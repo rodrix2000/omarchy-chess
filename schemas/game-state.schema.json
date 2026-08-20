@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rodrix2000/omarchy-chess/schemas/game-state.schema.json",
+  "title": "Omarchy Chess Active Game",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "game_id",
+    "plugin_version",
+    "mode",
+    "status",
+    "created_at",
+    "updated_at",
+    "players",
+    "fen",
+    "pgn",
+    "moves",
+    "position_counts",
+    "clock",
+    "result"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "game_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "plugin_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "mode": {
+      "enum": [
+        "computer",
+        "local"
+      ]
+    },
+    "status": {
+      "enum": [
+        "active-human",
+        "active-computer",
+        "paused",
+        "paused-error",
+        "completed",
+        "abandoned"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "players": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "white",
+        "black"
+      ],
+      "properties": {
+        "white": {
+          "$ref": "#/$defs/player"
+        },
+        "black": {
+          "$ref": "#/$defs/player"
+        }
+      }
+    },
+    "human_color": {
+      "enum": [
+        "white",
+        "black",
+        null
+      ]
+    },
+    "difficulty": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "learner",
+        "casual",
+        "challenging",
+        "strong",
+        "custom",
+        null
+      ]
+    },
+    "time_control": {
+      "$ref": "#/$defs/time_control"
+    },
+    "fen": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "pgn": {
+      "type": "string",
+      "maxLength": 2000000
+    },
+    "moves": {
+      "type": "array",
+      "maxItems": 20000,
+      "items": {
+        "$ref": "#/$defs/move"
+      }
+    },
+    "position_counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000
+      }
+    },
+    "clock": {
+      "$ref": "#/$defs/clock"
+    },
+    "pending_draw_offer_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "white",
+        "black",
+        null
+      ]
+    },
+    "orientation": {
+      "enum": [
+        "white",
+        "black",
+        "manual",
+        "auto"
+      ]
+    },
+    "result": {
+      "$ref": "#/$defs/result"
+    }
+  },
+  "$defs": {
+    "player": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "name"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "human",
+            "computer"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        }
+      }
+    },
+    "time_control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_ms",
+        "increment_ms"
+      ],
+      "properties": {
+        "base_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "increment_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3600000
+        }
+      }
+    },
+    "move": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ply",
+        "uci",
+        "san",
+        "fen_after",
+        "played_at"
+      ],
+      "properties": {
+        "ply": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "uci": {
+          "type": "string",
+          "pattern": "^[a-h][1-8][a-h][1-8][qrbn]?$"
+        },
+        "san": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "fen_after": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "played_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "clock_after_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "clock_before": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/clock"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "draw_offer_before": {
+          "enum": [
+            "white",
+            "black",
+            null
+          ]
+        }
+      }
+    },
+    "clock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "white_ms",
+        "black_ms",
+        "increment_ms",
+        "running_side",
+        "last_started_at"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "white_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "black_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "increment_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "running_side": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "white",
+            "black",
+            null
+          ]
+        },
+        "last_started_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "result": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "score",
+        "reason",
+        "finished_at"
+      ],
+      "properties": {
+        "score": {
+          "enum": [
+            "1-0",
+            "0-1",
+            "1/2-1/2",
+            "*"
+          ]
+        },
+        "reason": {
+          "enum": [
+            "checkmate",
+            "stalemate",
+            "dead-position",
+            "resignation",
+            "draw-agreement",
+            "threefold-claim",
+            "fivefold-automatic",
+            "fifty-move-claim",
+            "seventy-five-move-automatic",
+            "timeout",
+            "timeout-insufficient-mating-possibility",
+            "abandoned"
+          ]
+        },
+        "finished_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

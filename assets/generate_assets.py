@@ -1,0 +1,203 @@
+#!/usr/bin/env python3
+"""Generate the original Omarchy Chess vector artwork.
+
+The piece geometry and product-mark geometry live in this file so the checked-in
+SVGs can be recreated without a design application or an internet connection.
+The only optional external tool is rsvg-convert (ImageMagick is a fallback) for
+the 256px PNG export.
+"""
+
+from __future__ import annotations
+
+import argparse
+import shutil
+import subprocess
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parent
+PIECE_DIR = ROOT / "pieces" / "classic"
+
+WHITE = {
+    "fill": "#f3f0e7",
+    "stroke": "#1d232b",
+    "highlight": "#fffdf7",
+}
+BLACK = {
+    "fill": "#29313b",
+    "stroke": "#f4f0e6",
+    "highlight": "#657080",
+}
+
+
+def svg_document(title: str, body: str, view_box: str = "0 0 100 100") -> str:
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{view_box}" '
+        'role="img" aria-labelledby="asset-title">\n'
+        f"  <title id=\"asset-title\">{title}</title>\n"
+        f"  {body}\n"
+        "</svg>\n"
+    )
+
+
+def paint(fill: str, stroke: str, width: float = 2.3) -> str:
+    return (
+        f'fill="{fill}" stroke="{stroke}" stroke-width="{width:g}" '
+        'stroke-linejoin="round" stroke-linecap="round"'
+    )
+
+
+def common_base(palette: dict[str, str]) -> str:
+    p = paint(palette["fill"], palette["stroke"])
+    return (
+        f'<path d="M13 94 C13 90 17 88 23 86 L27 83 H73 L77 86 '
+        f'C83 88 87 90 87 94 V95 H13 Z" {p}/>\n'
+        f'<path d="M28 84 C29 79 30 74 35 69 H65 C70 74 71 79 72 84 Z" {p}/>\n'
+        f'<path d="M26 70 Q26 67 31 64 H69 Q74 67 74 70 Z" {p}/>'
+    )
+
+
+def accent_line(palette: dict[str, str], path: str, width: float = 1.8) -> str:
+    return (
+        f'<path d="{path}" fill="none" stroke="{palette["highlight"]}" '
+        f'stroke-width="{width:g}" stroke-linecap="round" opacity="0.78"/>'
+    )
+
+
+def piece_body(kind: str, palette: dict[str, str]) -> str:
+    p = paint(palette["fill"], palette["stroke"])
+    h = palette["highlight"]
+    parts: list[str] = []
+
+    if kind == "king":
+        parts.append(
+            f'<path d="M38 64 L34 57 L38 34 Q40 30 44 28 H56 Q60 30 62 34 '
+            f'L66 57 L62 64 Z" {p}/>'
+        )
+        parts.append(f'<path d="M46 14 H54 V22 H61 V30 H54 V38 H46 V30 H39 V22 H46 Z" {p}/>' )
+        parts.append(accent_line(palette, "M43 51 H57 M45 58 H55", 1.6))
+    elif kind == "queen":
+        parts.append(
+            f'<path d="M31 64 L29 52 L34 27 L42 44 L50 21 L58 44 L66 27 '
+            f'L71 52 L69 64 Z" {p}/>'
+        )
+        for cx, cy in ((34, 27), (50, 21), (66, 27)):
+            parts.append(f'<circle cx="{cx}" cy="{cy}" r="3" {p}/>' )
+        parts.append(accent_line(palette, "M35 53 H65 M39 59 H61", 1.6))
+    elif kind == "rook":
+        parts.append(
+            f'<path d="M30 64 V31 H36 V24 H44 V31 H50 V24 H58 V31 H64 V24 H72 '
+            f'V64 Z" {p}/>'
+        )
+        parts.append(accent_line(palette, "M35 45 H67 M38 56 H64", 1.7))
+    elif kind == "bishop":
+        parts.append(
+            f'<path d="M50 15 C41 15 34 21 34 30 C34 40 43 48 44 54 '
+            f'C44 58 39 61 35 64 H65 C61 61 56 58 56 54 C57 48 66 40 66 30 '
+            f'C66 21 59 15 50 15 Z" {p}/>'
+        )
+        parts.append(
+            f'<path d="M59 22 L39 48" fill="none" stroke="{h}" stroke-width="3.2" '
+            'stroke-linecap="round"/>'
+        )
+        parts.append(accent_line(palette, "M40 57 H60", 1.6))
+    elif kind == "knight":
+        parts.append(
+            f'<path d="M34 65 C37 57 43 52 45 46 C47 41 42 34 39 29 '
+            f'C36 24 39 18 45 15 C51 12 59 14 63 18 L69 25 L63 28 L66 33 '
+            f'L59 36 C55 39 52 44 54 50 C56 55 61 60 66 65 Z" {p}/>'
+        )
+        parts.append(f'<path d="M45 16 L51 29 L59 22" fill="none" stroke="{h}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>')
+        parts.append(f'<circle cx="56" cy="24" r="2.2" fill="{h}" stroke="{palette["stroke"]}" stroke-width="1"/>' )
+        parts.append(accent_line(palette, "M42 57 C48 54 52 54 57 56", 1.6))
+    elif kind == "pawn":
+        parts.append(f'<circle cx="50" cy="23" r="10" {p}/>' )
+        parts.append(f'<path d="M41 35 C43 32 46 31 50 31 C54 31 57 32 59 35 '
+                     f'L57 49 C57 55 61 60 65 64 H35 C39 60 43 55 43 49 Z" {p}/>' )
+        parts.append(accent_line(palette, "M43 48 H57 M40 58 H60", 1.6))
+    else:
+        raise ValueError(f"unknown piece kind: {kind}")
+
+    return "\n  ".join(parts)
+
+
+def generate_pieces() -> None:
+    PIECE_DIR.mkdir(parents=True, exist_ok=True)
+    for color_name, palette in (("white", WHITE), ("black", BLACK)):
+        for kind in ("king", "queen", "rook", "bishop", "knight", "pawn"):
+            title = f"Omarchy Chess classic {color_name} {kind}"
+            body = f"<g>{common_base(palette)}\n  {piece_body(kind, palette)}</g>"
+            (PIECE_DIR / f"{color_name}-{kind}.svg").write_text(
+                svg_document(title, body), encoding="utf-8"
+            )
+
+
+ICON_KNIGHT = (
+    "M78 201 C84 187 95 175 102 162 C109 149 109 138 103 126 "
+    "C97 114 86 104 81 92 C75 77 83 63 98 55 C114 46 136 49 149 60 "
+    "L166 75 L146 83 L157 98 L137 106 C126 111 120 123 122 136 "
+    "C124 151 142 174 160 201 Z"
+)
+
+
+def icon_svg(monochrome: bool = False) -> str:
+    if monochrome:
+        ink = "#f4f0e6"
+        body = (
+            f'<rect x="18" y="18" width="220" height="220" rx="48" fill="none" stroke="{ink}" stroke-width="10"/>\n'
+            f'  <path d="M48 58 H100 V110 H48 Z M100 110 H152 V162 H100 Z M152 58 H204 V110 H152 Z M48 162 H100 V214 H48 Z M152 162 H204 V214 H152 Z" fill="{ink}"/>\n'
+            f'  <path d="{ICON_KNIGHT}" fill="{ink}"/>\n'
+            f'  <circle cx="116" cy="73" r="5" fill="none" stroke="{ink}" stroke-width="5"/>'
+        )
+        return svg_document("Omarchy Chess", body, "0 0 256 256")
+
+    body = (
+        '<rect x="18" y="18" width="220" height="220" rx="48" fill="#252b34" stroke="#e3ac66" stroke-width="10"/>\n'
+        '  <path d="M48 58 H100 V110 H48 Z M100 110 H152 V162 H100 Z M152 58 H204 V110 H152 Z M48 162 H100 V214 H48 Z M152 162 H204 V214 H152 Z" fill="#394452"/>\n'
+        f'  <path d="{ICON_KNIGHT}" fill="#f3f0e7" stroke="#1d232b" stroke-width="6" stroke-linejoin="round"/>\n'
+        '  <path d="M104 55 L115 91 L132 73" fill="none" stroke="#e3ac66" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>\n'
+        '  <circle cx="116" cy="73" r="5" fill="#e3ac66"/>'
+    )
+    return svg_document("Omarchy Chess", body, "0 0 256 256")
+
+
+def generate_icons() -> None:
+    (ROOT / "icon.svg").write_text(icon_svg(), encoding="utf-8")
+    (ROOT / "icon-monochrome.svg").write_text(icon_svg(monochrome=True), encoding="utf-8")
+
+
+def render_icon_png() -> None:
+    output = ROOT / "icon-256.png"
+    renderer = shutil.which("rsvg-convert")
+    if renderer:
+        subprocess.run(
+            [renderer, "--width", "256", "--height", "256", str(ROOT / "icon.svg"), "--output", str(output)],
+            check=True,
+        )
+        return
+
+    imagemagick = shutil.which("magick") or shutil.which("convert")
+    if imagemagick is None:
+        raise RuntimeError("icon-256.png needs rsvg-convert or ImageMagick")
+    subprocess.run(
+        [imagemagick, str(ROOT / "icon.svg"), "-background", "none", "-resize", "256x256", f"PNG32:{output}"],
+        check=True,
+    )
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--no-png", action="store_true", help="skip the optional PNG raster export")
+    args = parser.parse_args()
+    generate_pieces()
+    generate_icons()
+    if not args.no_png:
+        render_icon_png()
+    print("generated original Omarchy Chess SVG assets")
+    if not args.no_png:
+        print("generated assets/icon-256.png")
+
+
+if __name__ == "__main__":
+    main()
