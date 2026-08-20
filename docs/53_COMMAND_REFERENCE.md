@@ -68,12 +68,16 @@ This permanently deletes active games, history, settings, and recovery files.
 
 ## Development
 
+From a clean local checkout, use the same Omarchy lifecycle as a public install:
+
 ```bash
-./scripts/dev-install.sh
 ./scripts/validate.sh
-omarchy-shell shell rescanPlugins
-omarchy-restart-shell
+omarchy plugin remove io.github.rodrix2000.chess --yes
+omarchy plugin add "file://$PWD" --enable --yes
 ```
+
+Removing the installed source leaves the state directory intact. Commit local
+changes before reinstalling because the Omarchy command clones the checkout.
 
 ## Logs
 
