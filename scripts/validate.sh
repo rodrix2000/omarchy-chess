@@ -9,9 +9,10 @@ panel_tmp=""
 computer_tmp=""
 history_tmp=""
 abandon_tmp=""
+responsive_tmp=""
 cleanup() {
   local path
-  for path in "$service_tmp" "$panel_tmp" "$computer_tmp" "$history_tmp" "$abandon_tmp"; do
+  for path in "$service_tmp" "$panel_tmp" "$computer_tmp" "$history_tmp" "$abandon_tmp" "$responsive_tmp"; do
     [[ -z "$path" ]] || rm -rf -- "$path"
   done
 }
@@ -109,6 +110,34 @@ document = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
 assert document["status"] == "paused"
 assert [move["uci"] for move in document["moves"]] == ["e2e4"]
 print("valid: QML panel local-game close/resume smoke")
+PY
+fi
+
+if [[ -n "$quickshell_bin" && -f tests/qml/ResponsivePanelSmoke.qml ]]; then
+  responsive_tmp="$(mktemp -d)"
+  mkdir -p "$responsive_tmp/config" "$responsive_tmp/runtime" \
+    "$responsive_tmp/state"
+  chmod 700 "$responsive_tmp/runtime"
+  cp -a "$ROOT/." "$responsive_tmp/config/"
+  cp -a "$omarchy_root/shell/Commons" "$responsive_tmp/config/Commons"
+  cp -a "$omarchy_root/shell/Ui" "$responsive_tmp/config/Ui"
+  cp "$ROOT/tests/qml/ResponsivePanelSmoke.qml" \
+    "$responsive_tmp/config/shell.qml"
+  timeout 25s env -u DISPLAY -u WAYLAND_DISPLAY \
+    XDG_RUNTIME_DIR="$responsive_tmp/runtime" \
+    XDG_STATE_HOME="$responsive_tmp/state" \
+    OMARCHY_CHESS_DISABLE_AUDIO=1 \
+    QT_QPA_PLATFORM=minimal QT_QPA_PLATFORMTHEME= \
+    "$quickshell_bin" --no-color -p "$responsive_tmp/config"
+  python3 - "$responsive_tmp/state/omarchy-chess/active-game.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+document = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+assert document["status"] == "paused"
+assert [move["uci"] for move in document["moves"]] == ["e2e4"]
+print("valid: QML responsive breakpoint and move smoke")
 PY
 fi
 

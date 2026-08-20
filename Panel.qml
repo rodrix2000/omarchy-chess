@@ -30,6 +30,12 @@ Item {
   property int replayPly: 0
   property string replayOrientation: "white"
   property string pendingHistoryId: ""
+  property size preferredWindowSize: Qt.size(960, 720)
+  property real measuredGameViewportWidth: 0
+  property real measuredGameViewportHeight: 0
+  property real measuredBoardSize: 0
+  property real measuredRailHeight: 0
+  property real measuredRailImplicitHeight: 0
 
   readonly property var game: service && service.snapshot
     ? service.snapshot : ({ status: "idle", board: [], moves: [] })
@@ -38,7 +44,10 @@ Item {
     && gameStatus !== "completed" && gameStatus !== "abandoned"
   readonly property bool gameInputEnabled: gameStatus === "active-human"
     && game.persistence_healthy !== false
-  readonly property bool wideLayout: gameWindow.width >= 850
+  readonly property bool wideLayout: gameWindow.width >= 900
+  readonly property bool mediumLayout: gameWindow.width >= 720
+    && gameWindow.width < 900
+  readonly property bool sideBySideGameLayout: gameWindow.width >= 720
   readonly property bool compactLayout: gameWindow.width < 720
   readonly property var latestMove: game.moves && game.moves.length > 0
     ? game.moves[game.moves.length - 1] : null
@@ -55,6 +64,17 @@ Item {
   readonly property string pluginId: manifest && manifest.id
     ? String(manifest.id) : "io.github.rodrix2000.chess"
   readonly property bool opened: gameWindow.visible
+  readonly property var responsiveMetrics: ({
+    window_width: gameWindow.width,
+    window_height: gameWindow.height,
+    viewport_width: measuredGameViewportWidth,
+    viewport_height: measuredGameViewportHeight,
+    board_size: measuredBoardSize,
+    rail_height: measuredRailHeight,
+    rail_implicit_height: measuredRailImplicitHeight,
+    side_by_side: sideBySideGameLayout,
+    compact: compactLayout
+  })
 
   signal gameFocusRequested()
 
@@ -551,8 +571,8 @@ Item {
   FloatingWindow {
     id: gameWindow
     title: "Omarchy Chess"
-    implicitWidth: 960
-    implicitHeight: 720
+    implicitWidth: Math.max(640, root.preferredWindowSize.width)
+    implicitHeight: Math.max(560, root.preferredWindowSize.height)
     minimumSize: Qt.size(640, 560)
     visible: false
     color: Color.background
@@ -826,8 +846,22 @@ Item {
     Item {
       id: gameView
 
+      function syncResponsiveMetrics() {
+        var board = root.sideBySideGameLayout ? wideBoardView : compactBoardView
+        var rail = root.sideBySideGameLayout ? wideRailLoader : compactRailLoader
+        root.measuredGameViewportWidth = width
+        root.measuredGameViewportHeight = height
+        root.measuredBoardSize = board.boardSize
+        root.measuredRailHeight = rail.height
+        root.measuredRailImplicitHeight = rail.implicitHeight
+      }
+
+      Component.onCompleted: Qt.callLater(syncResponsiveMetrics)
+      onWidthChanged: Qt.callLater(syncResponsiveMetrics)
+      onHeightChanged: Qt.callLater(syncResponsiveMetrics)
+
       function focusBoard() {
-        if (root.wideLayout) wideBoardView.forceActiveFocus()
+        if (root.sideBySideGameLayout) wideBoardView.forceActiveFocus()
         else compactBoardView.forceActiveFocus()
       }
 
@@ -837,28 +871,48 @@ Item {
       }
 
       RowLayout {
-        anchors.fill: parent; spacing: 16; visible: root.wideLayout
-        ChessUi.BoardView {
-          id: wideBoardView
-          Layout.fillWidth: true; Layout.fillHeight: true; Layout.maximumWidth: height; Layout.maximumHeight: width
-          pieces: root.game.board || []; orientation: root.boardOrientation; selectedSquare: root.selectedSquare; cursorSquare: root.cursorSquare; legalMoves: root.legalTargets; lastMove: root.latestMove; checkedKingSquare: root.checkedKingSquare; inputEnabled: root.gameInputEnabled
-          reducedMotion: root.service && root.service.settingsSnapshot.accessibility ? root.service.settingsSnapshot.accessibility.reduced_motion : false
-          highContrast: root.service && root.service.settingsSnapshot.accessibility ? root.service.settingsSnapshot.accessibility.high_contrast_indicators : false
-          showCoordinates: !root.service || !root.service.settingsSnapshot.appearance || root.service.settingsSnapshot.appearance.coordinates !== false
-          onSquareActivated: function(square) { root.activateSquare(square) }
-          onMoveRequested: function(from, to) { root.requestBoardMove(from, to) }
-          onPromotionRequested: function(from, to) { root.requestBoardMove(from, to) }
-          onFlipRequested: root.flipBoard()
-          onCursorMoved: function(square) { root.cursorSquare = square }
-          onCancelRequested: root.clearSelection()
+        anchors.fill: parent; spacing: 16; visible: root.sideBySideGameLayout
+        Item {
+          Layout.fillWidth: true
+          Layout.fillHeight: true
+          ChessUi.BoardView {
+            id: wideBoardView
+            anchors.centerIn: parent
+            width: Math.max(0, Math.floor(Math.min(parent.width, parent.height) / 8) * 8)
+            height: width
+            pieces: root.game.board || []; orientation: root.boardOrientation; selectedSquare: root.selectedSquare; cursorSquare: root.cursorSquare; legalMoves: root.legalTargets; lastMove: root.latestMove; checkedKingSquare: root.checkedKingSquare; inputEnabled: root.gameInputEnabled
+            reducedMotion: root.service && root.service.settingsSnapshot.accessibility ? root.service.settingsSnapshot.accessibility.reduced_motion : false
+            highContrast: root.service && root.service.settingsSnapshot.accessibility ? root.service.settingsSnapshot.accessibility.high_contrast_indicators : false
+            showCoordinates: !root.service || !root.service.settingsSnapshot.appearance || root.service.settingsSnapshot.appearance.coordinates !== false
+            onSquareActivated: function(square) { root.activateSquare(square) }
+            onMoveRequested: function(from, to) { root.requestBoardMove(from, to) }
+            onPromotionRequested: function(from, to) { root.requestBoardMove(from, to) }
+            onFlipRequested: root.flipBoard()
+            onCursorMoved: function(square) { root.cursorSquare = square }
+            onCancelRequested: root.clearSelection()
+            onBoardSizeChanged: Qt.callLater(gameView.syncResponsiveMetrics)
+          }
         }
-        Loader { Layout.preferredWidth: 292; Layout.fillHeight: true; sourceComponent: railComponent }
+        Loader {
+          id: wideRailLoader
+          Layout.preferredWidth: root.mediumLayout ? 252 : 292
+          Layout.fillHeight: true
+          sourceComponent: railComponent
+          onHeightChanged: Qt.callLater(gameView.syncResponsiveMetrics)
+          onImplicitHeightChanged: Qt.callLater(gameView.syncResponsiveMetrics)
+        }
       }
       ColumnLayout {
-        anchors.fill: parent; spacing: 12; visible: !root.wideLayout
+        anchors.fill: parent; spacing: 12; visible: !root.sideBySideGameLayout
         ChessUi.BoardView {
           id: compactBoardView
-          Layout.fillWidth: true; Layout.preferredHeight: Math.min(width, parent.height * 0.62)
+          readonly property real compactRailHeight: Math.max(210,
+            compactRailLoader.implicitHeight)
+          Layout.fillWidth: true
+          Layout.minimumHeight: 0
+          Layout.preferredHeight: Math.min(width,
+            Math.max(0, parent.height - compactRailHeight - 12))
+          Layout.maximumHeight: Layout.preferredHeight
           pieces: root.game.board || []; orientation: root.boardOrientation; selectedSquare: root.selectedSquare; cursorSquare: root.cursorSquare; legalMoves: root.legalTargets; lastMove: root.latestMove; checkedKingSquare: root.checkedKingSquare; inputEnabled: root.gameInputEnabled
           reducedMotion: root.service && root.service.settingsSnapshot.accessibility ? root.service.settingsSnapshot.accessibility.reduced_motion : false
           highContrast: root.service && root.service.settingsSnapshot.accessibility ? root.service.settingsSnapshot.accessibility.high_contrast_indicators : false
@@ -869,8 +923,18 @@ Item {
           onFlipRequested: root.flipBoard()
           onCursorMoved: function(square) { root.cursorSquare = square }
           onCancelRequested: root.clearSelection()
+          onBoardSizeChanged: Qt.callLater(gameView.syncResponsiveMetrics)
         }
-        Loader { Layout.fillWidth: true; Layout.fillHeight: true; sourceComponent: railComponent }
+        Loader {
+          id: compactRailLoader
+          Layout.fillWidth: true
+          Layout.minimumHeight: Math.max(210, implicitHeight)
+          Layout.preferredHeight: Layout.minimumHeight
+          Layout.maximumHeight: Layout.minimumHeight
+          sourceComponent: railComponent
+          onHeightChanged: Qt.callLater(gameView.syncResponsiveMetrics)
+          onImplicitHeightChanged: Qt.callLater(gameView.syncResponsiveMetrics)
+        }
       }
     }
   }
@@ -878,14 +942,63 @@ Item {
   Component {
     id: railComponent
     Rectangle {
+      implicitHeight: railContent.implicitHeight + 28
       radius: 14
       color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.045)
       border.width: 1
       border.color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.12)
+      clip: true
       ColumnLayout {
+        id: railContent
         anchors.fill: parent; anchors.margins: 14; spacing: 9
         RowLayout {
           Layout.fillWidth: true
+          visible: root.compactLayout
+          spacing: 12
+          RowLayout {
+            Layout.fillWidth: true
+            Text {
+              Layout.fillWidth: true
+              text: root.game.players
+                ? root.game.players[root.boardOrientation === "white" ? "black" : "white"].name
+                : "Opponent"
+              color: Color.foreground
+              font.pixelSize: 15
+              font.weight: Font.Medium
+              elide: Text.ElideRight
+            }
+            ChessUi.PlayerClock {
+              Layout.preferredWidth: Style.space(152)
+              side: root.boardOrientation === "white" ? "black" : "white"
+              remainingMs: root.game.clock && root.game.clock.enabled ? root.game.clock[(root.boardOrientation === "white" ? "black" : "white") + "_ms"] : -1
+              running: root.game.clock && !root.game.clock.paused && root.game.clock.running_side === side
+              paused: !root.game.clock || root.game.clock.paused === true
+              clockEnabled: root.game.clock && root.game.clock.enabled === true
+            }
+          }
+          RowLayout {
+            Layout.fillWidth: true
+            Text {
+              Layout.fillWidth: true
+              text: root.game.players ? root.game.players[root.boardOrientation].name : "Player"
+              color: Color.foreground
+              font.pixelSize: 15
+              font.weight: Font.Medium
+              elide: Text.ElideRight
+            }
+            ChessUi.PlayerClock {
+              Layout.preferredWidth: Style.space(152)
+              side: root.boardOrientation
+              remainingMs: root.game.clock && root.game.clock.enabled ? root.game.clock[root.boardOrientation + "_ms"] : -1
+              running: root.game.clock && !root.game.clock.paused && root.game.clock.running_side === side
+              paused: !root.game.clock || root.game.clock.paused === true
+              clockEnabled: root.game.clock && root.game.clock.enabled === true
+            }
+          }
+        }
+        RowLayout {
+          Layout.fillWidth: true
+          visible: !root.compactLayout
           Text { Layout.fillWidth: true; text: root.game.players ? root.game.players[root.boardOrientation === "white" ? "black" : "white"].name : "Opponent"; color: Color.foreground; font.pixelSize: 15; font.weight: Font.Medium; elide: Text.ElideRight }
           ChessUi.PlayerClock {
             side: root.boardOrientation === "white" ? "black" : "white"
@@ -900,10 +1013,11 @@ Item {
           kind: root.game.persistence_healthy === false ? "error" : root.game.in_check ? "warning" : root.gameStatus === "active-computer" ? "thinking" : root.gameStatus === "paused" ? "paused" : "info"
           iconText: root.game.in_check ? "!" : root.gameStatus === "active-computer" ? "…" : ""
         }
-        ChessUi.MoveList { Layout.fillWidth: true; Layout.fillHeight: true; moves: root.game.moves || []; selectedPly: root.game.moves ? root.game.moves.length : 0; replayMode: false; followLatest: true; emptyText: "Moves will appear here" }
+        ChessUi.MoveList { Layout.fillWidth: true; Layout.fillHeight: true; visible: !root.compactLayout; moves: root.game.moves || []; selectedPly: root.game.moves ? root.game.moves.length : 0; replayMode: false; followLatest: true; emptyText: "Moves will appear here" }
         ColumnLayout {
           Layout.fillWidth: true
-          visible: root.capturedBy("white") !== "" || root.capturedBy("black") !== ""
+          visible: root.wideLayout
+            && (root.capturedBy("white") !== "" || root.capturedBy("black") !== "")
           spacing: 2
           Text { text: "Captured material"; color: Color.muted; font.pixelSize: 10; font.weight: Font.DemiBold }
           Text { Layout.fillWidth: true; text: "White: " + (root.capturedBy("white") || "—"); color: Color.foreground; font.pixelSize: 15; elide: Text.ElideRight }
@@ -928,11 +1042,12 @@ Item {
           ChessUi.SecondaryButton { text: "Draw"; selected: root.drawActionsOpen; accessibleDescription: "Open draw actions"; onClicked: root.drawActionsOpen = !root.drawActionsOpen }
           ChessUi.SecondaryButton { text: root.gameStatus === "paused" ? "Resume" : "Pause"; accessibleDescription: root.gameStatus === "paused" ? "Resume the paused game" : "Pause the game"; onClicked: { if (root.gameStatus === "paused") root.invoke(root.service.resumeGame()); else root.invoke(root.pauseCurrentGame("user")) } }
           ChessUi.SecondaryButton { text: "Resign"; destructive: true; accessibleDescription: "Resign the current game"; onClicked: root.openConfirmation("resign") }
-          ChessUi.SecondaryButton { text: "Copy PGN"; accessibleDescription: "Copy the current game as PGN"; onClicked: root.invoke(root.service.copyPgn(root.game.game_id), "PGN copied.") }
-          ChessUi.SecondaryButton { text: "Save PGN"; accessibleDescription: "Save a PGN copy in the local exports folder"; onClicked: root.invoke(root.service.exportPgn(root.game.game_id, ""), "Saving PGN…") }
+          ChessUi.SecondaryButton { visible: !root.compactLayout; text: "Copy PGN"; accessibleDescription: "Copy the current game as PGN"; onClicked: root.invoke(root.service.copyPgn(root.game.game_id), "PGN copied.") }
+          ChessUi.SecondaryButton { visible: !root.compactLayout; text: "Save PGN"; accessibleDescription: "Save a PGN copy in the local exports folder"; onClicked: root.invoke(root.service.exportPgn(root.game.game_id, ""), "Saving PGN…") }
         }
         RowLayout {
           Layout.fillWidth: true
+          visible: !root.compactLayout
           Text { Layout.fillWidth: true; text: root.game.players ? root.game.players[root.boardOrientation].name : "Player"; color: Color.foreground; font.pixelSize: 15; font.weight: Font.Medium; elide: Text.ElideRight }
           ChessUi.PlayerClock {
             side: root.boardOrientation

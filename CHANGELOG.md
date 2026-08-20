@@ -2,6 +2,15 @@
 
 All notable user-visible and compatibility changes are recorded here.
 
+## [Unreleased]
+
+### Fixed
+
+- Prevented narrow game controls from overflowing their card and overlapping the footer
+- Let the board use the available height in medium, default, and wide windows instead of remaining near its implicit size
+- Normalized each bundled black piece to the visible height and vertical alignment of its matching white piece
+- Added a real Quickshell journey across 640×560, 704×855, 800×700, 960×720, and 1398×822 layouts with a persisted move
+
 ## [1.0.2] — 2026-08-20
 
 ### Fixed
