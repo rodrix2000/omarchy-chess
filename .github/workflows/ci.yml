@@ -28,7 +28,7 @@ jobs:
           import os
           from pathlib import Path
           manifest = json.loads(Path("manifest.json").read_text())
-          assert manifest["version"] == "1.0.2"
+          assert manifest["version"] == "1.0.3"
           for path in Path("schemas").glob("*.json"):
               json.loads(path.read_text())
           if os.environ["GITHUB_REF_TYPE"] == "tag":

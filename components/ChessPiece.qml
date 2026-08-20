@@ -12,12 +12,43 @@ Item {
   property bool dragActive: false
   readonly property bool hasNamedPiece: /^(white|black)$/.test(root.pieceColor)
     && /^(king|queen|rook|bishop|knight|pawn)$/.test(root.pieceType)
+  readonly property bool usesBundledPiece: root.source.toString() === ""
+    && root.hasNamedPiece
   readonly property url resolvedSource: root.source.toString() !== ""
     ? root.source
     : root.hasNamedPiece
       ? Qt.resolvedUrl("../assets/pieces/modern/" + root.pieceColor
         + "-" + root.pieceType + ".png")
       : ""
+  readonly property rect assetBounds: boundsFor(root.pieceColor, root.pieceType)
+  readonly property rect whiteTargetBounds: boundsFor("white", root.pieceType)
+  readonly property bool assetReady: asset.status === Image.Ready
+  readonly property real renderedPieceHeight: root.usesBundledPiece
+    ? root.height * root.whiteTargetBounds.height / 512 : root.height
+
+  function boundsFor(colorName, typeName) {
+    var bounds = {
+      white: {
+        bishop: Qt.rect(169, 137, 194, 355),
+        king: Qt.rect(137, 30, 224, 462),
+        knight: Qt.rect(159, 100, 244, 390),
+        pawn: Qt.rect(169, 210, 194, 282),
+        queen: Qt.rect(142, 124, 207, 368),
+        rook: Qt.rect(132, 158, 246, 334)
+      },
+      black: {
+        bishop: Qt.rect(144, 109, 231, 383),
+        king: Qt.rect(126, 30, 259, 462),
+        knight: Qt.rect(126, 136, 259, 355),
+        pawn: Qt.rect(164, 261, 184, 231),
+        queen: Qt.rect(114, 54, 283, 438),
+        rook: Qt.rect(155, 166, 199, 326)
+      }
+    }
+    var colorBounds = bounds[colorName]
+    return colorBounds && colorBounds[typeName]
+      ? colorBounds[typeName] : Qt.rect(0, 0, 512, 512)
+  }
 
   readonly property string accessibleName: {
     var colorName = pieceColor === "black" ? "Black" : "White"
@@ -50,8 +81,16 @@ Item {
 
   Image {
     id: asset
-    anchors.fill: parent
+    x: root.usesBundledPiece
+      ? root.width * (root.whiteTargetBounds.x
+        + root.whiteTargetBounds.width / 2) / 512 - width / 2 : 0
+    y: root.usesBundledPiece
+      ? root.height * root.whiteTargetBounds.y / 512 : 0
+    width: root.usesBundledPiece
+      ? height * root.assetBounds.width / root.assetBounds.height : root.width
+    height: root.renderedPieceHeight
     source: root.resolvedSource
+    sourceClipRect: root.usesBundledPiece ? root.assetBounds : Qt.rect(0, 0, 0, 0)
     visible: status === Image.Ready
     fillMode: Image.PreserveAspectFit
     asynchronous: true

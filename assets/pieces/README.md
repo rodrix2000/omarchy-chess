@@ -6,6 +6,11 @@ outline. White pieces use an ivory body with a charcoal edge; black pieces use
 a charcoal body with an ivory edge. That distinction remains visible on both
 light and dark board squares and does not depend on color alone.
 
+The renderer uses the audited nontransparent bounds of each master to remove
+uneven canvas padding at display time. Each black piece is fitted to the visible
+height and vertical placement of its matching white piece; the canonical PNGs
+remain unchanged and retain their original geometry and checksums.
+
 The PNGs contain only the standard `IHDR`, `PLTE`, `tRNS`, `IDAT`, and `IEND`
 chunks—no text metadata, scripts, URLs, fonts, or external references. If a
 piece image cannot be loaded, the UI uses its documented Unicode fallback.
