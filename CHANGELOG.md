@@ -2,7 +2,7 @@
 
 All notable user-visible and compatibility changes are recorded here.
 
-## [Unreleased]
+## [1.0.3] — 2026-08-20
 
 ### Fixed
 
@@ -10,6 +10,11 @@ All notable user-visible and compatibility changes are recorded here.
 - Let the board use the available height in medium, default, and wide windows instead of remaining near its implicit size
 - Normalized each bundled black piece to the visible height and vertical alignment of its matching white piece
 - Added a real Quickshell journey across 640×560, 704×855, 800×700, 960×720, and 1398×822 layouts with a persisted move
+
+### Compatibility
+
+- No gameplay, rules, persistence schema, or state-path changes
+- Existing `1.0.0`, `1.0.1`, and `1.0.2` state resumes without migration
 
 ## [1.0.2] — 2026-08-20
 
@@ -82,6 +87,7 @@ All notable user-visible and compatibility changes are recorded here.
 - No migration is needed for the first public release
 - Runtime dependency: the Omarchy/Quickshell environment only; no user-installed engine or build tool
 
+[1.0.3]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.3
 [1.0.2]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.2
 [1.0.1]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.1
 [1.0.0]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.0

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.rodrix2000.chess",
   "name": "Omarchy Chess",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": "Rudy Rodriguez",
   "license": "MIT",
   "description": "Native, theme-aware chess for Omarchy with computer and local two-player modes.",
