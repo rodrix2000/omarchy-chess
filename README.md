@@ -8,7 +8,7 @@ Play a complete game of chess against the computer or a friend without leaving O
 omarchy plugin add https://github.com/rodrix2000/omarchy-chess.git --enable
 ```
 
-Built for Omarchy 4 with native QML. No account, API key, external engine, telemetry, runtime build, or network connection is needed after installation. [Watch the short demo](demo.mp4).
+Built for Omarchy Quattro (Omarchy 4) with native QML. No account, API key, external engine, telemetry, runtime build, or network connection is needed after installation. [Watch the short demo](demo.mp4).
 
 ## Features
 

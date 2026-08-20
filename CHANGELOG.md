@@ -4,6 +4,8 @@ All notable user-visible and compatibility changes are recorded here.
 
 ## [Unreleased]
 
+## [1.0.4] — 2026-08-20
+
 ### Fixed
 
 - Preserved transparent source padding and enabled mipmapped minification so modern piece outlines remain continuous on smaller boards
@@ -22,6 +24,12 @@ All notable user-visible and compatibility changes are recorded here.
 - Added a persisted setting to show or hide legal destination dots and capture rings without changing move input
 - Redesigned Home as a compact native launcher with an integrated resume card, modern piece icons, player-facing mode copy, and non-duplicated responsive navigation
 - Added a confirmed Clear history action that removes all archived games without touching the active game or settings
+
+### Compatibility
+
+- No active-game, completed-game, history, or settings schema migration is required
+- Existing `1.0.0` through `1.0.3` state resumes without migration
+- Tested with Omarchy Quattro (`4.0.0-1`), Quickshell `0.3.0.r20.g28771c7`, and Qt `6.11.1`
 
 ## [1.0.3] — 2026-08-20
 
@@ -108,6 +116,7 @@ All notable user-visible and compatibility changes are recorded here.
 - No migration is needed for the first public release
 - Runtime dependency: the Omarchy/Quickshell environment only; no user-installed engine or build tool
 
+[1.0.4]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.4
 [1.0.3]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.3
 [1.0.2]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.2
 [1.0.1]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.1

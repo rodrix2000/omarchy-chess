@@ -9,7 +9,7 @@
 "use strict"
 
 var CURRENT_SCHEMA_VERSION = 1
-var DEFAULT_PLUGIN_VERSION = "1.0.3"
+var DEFAULT_PLUGIN_VERSION = "1.0.4"
 var RESULT_SCORES = ["1-0", "0-1", "1/2-1/2", "*"]
 var COMPLETED_SCORES = ["1-0", "0-1", "1/2-1/2"]
 var RESULT_REASONS = [

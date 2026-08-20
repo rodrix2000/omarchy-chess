@@ -53,7 +53,7 @@ Item {
   property int computerSearchBudgetMs: 0
   property int clockCheckpointSeconds: 0
   readonly property string pluginVersion: manifest && manifest.version
-    ? String(manifest.version) : "1.0.3"
+    ? String(manifest.version) : "1.0.4"
   readonly property string stateDirectory: persistenceStore.stateDir
   readonly property bool audioRuntimeEnabled:
     Quickshell.env("OMARCHY_CHESS_DISABLE_AUDIO") !== "1"

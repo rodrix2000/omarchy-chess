@@ -65,7 +65,7 @@ ShellRoot {
   ChessPlugin.Panel {
     id: panel
     service: service
-    manifest: ({ id: "io.github.rodrix2000.chess", version: "1.0.3" })
+    manifest: ({ id: "io.github.rodrix2000.chess", version: "1.0.4" })
     preferredWindowSize: Qt.size(root.testWidth, root.testHeight)
   }
 
