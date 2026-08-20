@@ -2,6 +2,20 @@
 
 All notable user-visible and compatibility changes are recorded here.
 
+## [1.0.1] — 2026-08-20
+
+### Changed
+
+- Replaced the classic vector pieces with a new twelve-piece modern PNG set
+- Refreshed the repository preview and demo so the public homepage matches the in-game board
+- Added pinned checksums and strict PNG structure/CRC validation for all piece masters
+- Updated the default appearance metadata from `classic` to `modern`; saved games and settings remain compatible
+
+### Compatibility
+
+- No gameplay, rules, persistence schema, or state-path changes
+- Existing games resume normally after `omarchy plugin update io.github.rodrix2000.chess`
+
 ## [1.0.0] — 2026-08-20
 
 ### Added
@@ -46,4 +60,5 @@ All notable user-visible and compatibility changes are recorded here.
 - No migration is needed for the first public release
 - Runtime dependency: the Omarchy/Quickshell environment only; no user-installed engine or build tool
 
+[1.0.1]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.1
 [1.0.0]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.0

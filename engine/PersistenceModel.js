@@ -391,7 +391,7 @@ function defaultSettings() {
     appearance: {
       coordinates: true,
       orientation: "white",
-      piece_set: "classic"
+      piece_set: "modern"
     },
     audio: {
       enabled: true,

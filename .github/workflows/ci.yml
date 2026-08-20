@@ -28,7 +28,7 @@ jobs:
           import os
           from pathlib import Path
           manifest = json.loads(Path("manifest.json").read_text())
-          assert manifest["version"] == "1.0.0"
+          assert manifest["version"] == "1.0.1"
           for path in Path("schemas").glob("*.json"):
               json.loads(path.read_text())
           if os.environ["GITHUB_REF_TYPE"] == "tag":
@@ -43,6 +43,7 @@ jobs:
         run: |
           bash -n scripts/*.sh
           ./scripts/build-chess-vendor.sh --check
+          sha256sum -c assets/pieces/SHA256SUMS
       - name: Secret and runtime-network scan
         run: |
           ! rg -l --hidden -g '!.git/**' -g '!third_party/**' \
