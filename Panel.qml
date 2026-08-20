@@ -53,6 +53,8 @@ Item {
     ? game.moves[game.moves.length - 1] : null
   readonly property string checkedKingSquare: checkedKing()
   readonly property string boardOrientation: effectiveOrientation()
+  readonly property string boardTheme: effectiveBoardTheme()
+  readonly property bool showLegalMoveHints: effectiveLegalMoveHints()
   readonly property bool modalOpen: newGameDialog.opened || promotionDialog.opened
     || confirmDialog.opened
   readonly property bool aiError: game.save_error
@@ -72,6 +74,8 @@ Item {
     board_size: measuredBoardSize,
     rail_height: measuredRailHeight,
     rail_implicit_height: measuredRailImplicitHeight,
+    board_theme: boardTheme,
+    show_legal_moves: showLegalMoveHints,
     side_by_side: sideBySideGameLayout,
     compact: compactLayout
   })
@@ -292,6 +296,11 @@ Item {
       confirmDialog.message = "Its local JSON record and PGN file will be removed. This cannot be undone."
       confirmDialog.confirmText = "Delete saved game"
       confirmDialog.destructive = true
+    } else if (action === "clear-history") {
+      confirmDialog.title = "Clear all game history?"
+      confirmDialog.message = "Every completed-game record and PGN in History will be removed. Your active game and settings will stay untouched. This cannot be undone."
+      confirmDialog.confirmText = "Clear history"
+      confirmDialog.destructive = true
     } else if (action === "reset-settings") {
       confirmDialog.title = "Reset all chess settings?"
       confirmDialog.message = "Gameplay and accessibility defaults will reset. Active games and history stay untouched."
@@ -330,6 +339,9 @@ Item {
       if (invoke(service.removeHistoryGame(pendingHistoryId), "Deleting saved game…"))
         currentView = "history"
       pendingHistoryId = ""
+    } else if (confirmAction === "clear-history") {
+      if (invoke(service.clearHistory(), "Clearing game history…"))
+        currentView = "history"
     } else if (confirmAction === "reset-settings") {
       invoke(service.resetSettings(), "Resetting settings…")
     }
@@ -339,6 +351,11 @@ Item {
   function titleCase(value) {
     var text = String(value || "")
     return text.length ? text.charAt(0).toUpperCase() + text.slice(1) : ""
+  }
+
+  function moveCountLabel(plyCount) {
+    var moves = Math.ceil(Math.max(0, Number(plyCount || 0)) / 2)
+    return moves + (moves === 1 ? " move" : " moves")
   }
 
   function pieceAt(square) {
@@ -441,6 +458,20 @@ Item {
     if (stored === "auto" && game.mode === "local") return game.turn || "white"
     if (stored === "manual") return "white"
     return game.human_color === "black" ? "black" : "white"
+  }
+
+  function effectiveBoardTheme() {
+    var appearance = service && service.settingsSnapshot
+      ? service.settingsSnapshot.appearance : null
+    var requested = String(appearance && appearance.board_theme || "charcoal")
+    return /^(charcoal|green|ivory)$/.test(requested)
+      ? requested : "charcoal"
+  }
+
+  function effectiveLegalMoveHints() {
+    var appearance = service && service.settingsSnapshot
+      ? service.settingsSnapshot.appearance : null
+    return !appearance || appearance.show_legal_moves !== false
   }
 
   function flipBoard() {
@@ -598,9 +629,30 @@ Item {
           RowLayout {
             Layout.fillWidth: true
             spacing: 10
+            Rectangle {
+              visible: root.currentView === "home"
+              Layout.preferredWidth: 44
+              Layout.preferredHeight: 44
+              radius: Math.max(7, Style.cornerRadius)
+              color: Qt.rgba(Color.foreground.r, Color.foreground.g,
+                             Color.foreground.b, 0.045)
+              border.width: 1
+              border.color: Qt.rgba(Color.foreground.r, Color.foreground.g,
+                                    Color.foreground.b, 0.2)
+
+              ChessUi.ChessPiece {
+                anchors.centerIn: parent
+                width: 36
+                height: 36
+                pieceColor: "black"
+                pieceType: "knight"
+                enabled: false
+              }
+            }
             ChessUi.SecondaryButton {
-              text: root.currentView === "home" ? "♞" : "‹ Home"
-              accessibleDescription: root.currentView === "home" ? "Omarchy Chess home" : "Return to home"
+              visible: root.currentView !== "home"
+              text: "‹ Home"
+              accessibleDescription: "Return to home"
               onClicked: { root.clearSelection(); root.currentView = "home" }
             }
             ColumnLayout {
@@ -622,8 +674,9 @@ Item {
               }
             }
             ChessUi.SecondaryButton { text: "History"; visible: !root.compactLayout && root.currentView !== "history"; accessibleDescription: "Open completed game history"; onClicked: root.currentView = "history" }
+            ChessUi.SecondaryButton { text: "Settings"; visible: !root.compactLayout && root.currentView === "home"; accessibleDescription: "Open chess settings"; onClicked: root.currentView = "settings" }
             ChessUi.SecondaryButton { text: "Help"; visible: !root.compactLayout && root.currentView !== "help"; accessibleDescription: "Open chess controls and help"; onClicked: root.currentView = "help" }
-            ChessUi.SecondaryButton { text: "Close"; accessibleDescription: "Close and safely pause Omarchy Chess"; onClicked: root.requestClose() }
+            ChessUi.SecondaryButton { Layout.preferredWidth: 88; text: "Close"; accessibleDescription: "Close and safely pause Omarchy Chess"; onClicked: root.requestClose() }
           }
 
           ChessUi.StatusBanner {
@@ -655,7 +708,7 @@ Item {
             spacing: 12
             Text {
               Layout.fillWidth: true
-              text: root.currentView === "game" ? "Arrows/HJKL move · Enter selects · F flips · U undo · P pause · ? help" : "Fully offline · Native QML · Games stay on this device"
+              text: root.currentView === "game" ? "Arrows/HJKL move · Enter selects · F flips · U undo · P pause · ? help" : root.currentView === "home" ? "Offline by design · No account required" : "Fully offline · Native QML · Games stay on this device"
               color: Color.muted
               font.pixelSize: 11
               elide: Text.ElideRight
@@ -752,92 +805,23 @@ Item {
 
   Component {
     id: homeComponent
-    Controls.ScrollView {
-      contentWidth: availableWidth
-      clip: true
-      ColumnLayout {
-        width: parent.width
-        spacing: 18
-        Item { Layout.preferredHeight: 8 }
-        Text {
-          Layout.fillWidth: true
-          text: root.hasPlayableGame ? "Your board is waiting" : "A quiet place to play"
-          color: Color.foreground
-          font.pixelSize: root.compactLayout ? 27 : 36
-          font.weight: Font.DemiBold
-          horizontalAlignment: Text.AlignHCenter
-        }
-        Text {
-          Layout.fillWidth: true
-          Layout.maximumWidth: 620
-          Layout.alignment: Qt.AlignHCenter
-          text: root.hasPlayableGame ? "Resume exactly where you left off. Clocks do not run while the panel is closed." : "Complete orthodox chess, a friendly built-in opponent, and local play — all offline."
-          color: Color.muted
-          font.pixelSize: 14
-          wrapMode: Text.WordWrap
-          horizontalAlignment: Text.AlignHCenter
-        }
-        ChessUi.PrimaryButton {
-          Layout.alignment: Qt.AlignHCenter
-          visible: root.hasPlayableGame
-          text: root.gameStatus === "paused" || root.gameStatus === "paused-error" ? "Resume game" : "Return to game"
-          iconText: "▶"
-          accessibleDescription: "Resume the saved active game"
-          onClicked: { if (root.gameStatus === "paused") root.invoke(root.service.resumeGame()); root.currentView = "game" }
-        }
-        GridLayout {
-          Layout.fillWidth: true
-          Layout.maximumWidth: 760
-          Layout.alignment: Qt.AlignHCenter
-          columns: root.compactLayout ? 1 : 2
-          columnSpacing: 14
-          rowSpacing: 14
-          Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 170
-            radius: 16
-            color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.055)
-            border.width: 1
-            border.color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.14)
-            ColumnLayout {
-              anchors.fill: parent; anchors.margins: 20; spacing: 8
-              Text { text: "♟"; color: Color.accent; font.pixelSize: 31 }
-              Text { text: "Play Computer"; color: Color.foreground; font.pixelSize: 20; font.weight: Font.DemiBold }
-              Text { Layout.fillWidth: true; text: "Four distinct levels, with thinking kept off the shell thread."; color: Color.muted; font.pixelSize: 12; wrapMode: Text.WordWrap }
-              Item { Layout.fillHeight: true }
-              ChessUi.PrimaryButton { text: "Set up game"; accessibleDescription: "Configure a game against the computer"; onClicked: root.openNewGameDialog("computer", ({})) }
-            }
-          }
-          Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 170
-            radius: 16
-            color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.055)
-            border.width: 1
-            border.color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.14)
-            ColumnLayout {
-              anchors.fill: parent; anchors.margins: 20; spacing: 8
-              Text { text: "♜"; color: Color.accent; font.pixelSize: 31 }
-              Text { text: "Local Two-Player"; color: Color.foreground; font.pixelSize: 20; font.weight: Font.DemiBold }
-              Text { Layout.fillWidth: true; text: "Share the board, use optional clocks, and choose automatic orientation."; color: Color.muted; font.pixelSize: 12; wrapMode: Text.WordWrap }
-              Item { Layout.fillHeight: true }
-              ChessUi.PrimaryButton { text: "Set up game"; accessibleDescription: "Configure a local two-player game"; onClicked: root.openNewGameDialog("local", ({})) }
-            }
-          }
-        }
-        RowLayout {
-          Layout.alignment: Qt.AlignHCenter; spacing: 10
-          ChessUi.SecondaryButton { text: "History"; accessibleDescription: "Open game history"; onClicked: root.currentView = "history" }
-          ChessUi.SecondaryButton { text: "Settings"; accessibleDescription: "Open chess settings"; onClicked: root.currentView = "settings" }
-          ChessUi.SecondaryButton { text: "Help"; accessibleDescription: "Open chess help"; onClicked: root.currentView = "help" }
-        }
-        Text {
-          Layout.fillWidth: true
-          visible: root.service && root.service.historySummary && root.service.historySummary.total > 0
-          text: root.service && root.service.historySummary ? String(root.service.historySummary.total) + " completed game" + (root.service.historySummary.total === 1 ? "" : "s") + " saved locally" : ""
-          color: Color.muted; font.pixelSize: 12; horizontalAlignment: Text.AlignHCenter
-        }
+    ChessUi.HomeView {
+      hasPlayableGame: root.hasPlayableGame
+      compactLayout: root.compactLayout
+      game: root.game
+      historyCount: root.service && root.service.historySummary
+        ? Number(root.service.historySummary.total || 0) : 0
+
+      onResumeRequested: {
+        if (root.gameStatus === "paused") root.invoke(root.service.resumeGame())
+        root.currentView = "game"
+        Qt.callLater(root.focusCurrentView)
       }
+      onComputerGameRequested: root.openNewGameDialog("computer", ({}))
+      onLocalGameRequested: root.openNewGameDialog("local", ({}))
+      onHistoryRequested: root.currentView = "history"
+      onSettingsRequested: root.currentView = "settings"
+      onHelpRequested: root.currentView = "help"
     }
   }
 
@@ -881,6 +865,8 @@ Item {
             width: Math.max(0, Math.floor(Math.min(parent.width, parent.height) / 8) * 8)
             height: width
             pieces: root.game.board || []; orientation: root.boardOrientation; selectedSquare: root.selectedSquare; cursorSquare: root.cursorSquare; legalMoves: root.legalTargets; lastMove: root.latestMove; checkedKingSquare: root.checkedKingSquare; inputEnabled: root.gameInputEnabled
+            boardTheme: root.boardTheme
+            showLegalMoves: root.showLegalMoveHints
             reducedMotion: root.service && root.service.settingsSnapshot.accessibility ? root.service.settingsSnapshot.accessibility.reduced_motion : false
             highContrast: root.service && root.service.settingsSnapshot.accessibility ? root.service.settingsSnapshot.accessibility.high_contrast_indicators : false
             showCoordinates: !root.service || !root.service.settingsSnapshot.appearance || root.service.settingsSnapshot.appearance.coordinates !== false
@@ -914,6 +900,8 @@ Item {
             Math.max(0, parent.height - compactRailHeight - 12))
           Layout.maximumHeight: Layout.preferredHeight
           pieces: root.game.board || []; orientation: root.boardOrientation; selectedSquare: root.selectedSquare; cursorSquare: root.cursorSquare; legalMoves: root.legalTargets; lastMove: root.latestMove; checkedKingSquare: root.checkedKingSquare; inputEnabled: root.gameInputEnabled
+          boardTheme: root.boardTheme
+          showLegalMoves: root.showLegalMoveHints
           reducedMotion: root.service && root.service.settingsSnapshot.accessibility ? root.service.settingsSnapshot.accessibility.reduced_motion : false
           highContrast: root.service && root.service.settingsSnapshot.accessibility ? root.service.settingsSnapshot.accessibility.high_contrast_indicators : false
           showCoordinates: !root.service || !root.service.settingsSnapshot.appearance || root.service.settingsSnapshot.appearance.coordinates !== false
@@ -1013,7 +1001,7 @@ Item {
           kind: root.game.persistence_healthy === false ? "error" : root.game.in_check ? "warning" : root.gameStatus === "active-computer" ? "thinking" : root.gameStatus === "paused" ? "paused" : "info"
           iconText: root.game.in_check ? "!" : root.gameStatus === "active-computer" ? "…" : ""
         }
-        ChessUi.MoveList { Layout.fillWidth: true; Layout.fillHeight: true; visible: !root.compactLayout; moves: root.game.moves || []; selectedPly: root.game.moves ? root.game.moves.length : 0; replayMode: false; followLatest: true; emptyText: "Moves will appear here" }
+        ChessUi.MoveList { Layout.fillWidth: true; Layout.fillHeight: true; visible: !root.compactLayout && root.gameStatus !== "completed" && root.gameStatus !== "abandoned"; moves: root.game.moves || []; selectedPly: root.game.moves ? root.game.moves.length : 0; replayMode: false; followLatest: true; emptyText: "Moves will appear here" }
         ColumnLayout {
           Layout.fillWidth: true
           visible: root.wideLayout
@@ -1038,10 +1026,10 @@ Item {
         Flow {
           Layout.fillWidth: true; spacing: 6
           ChessUi.SecondaryButton { text: "Flip"; accessibleDescription: "Flip the board orientation"; onClicked: root.flipBoard() }
-          ChessUi.SecondaryButton { text: "Undo"; accessibleDescription: "Request to take back moves"; onClicked: root.openConfirmation("undo") }
-          ChessUi.SecondaryButton { text: "Draw"; selected: root.drawActionsOpen; accessibleDescription: "Open draw actions"; onClicked: root.drawActionsOpen = !root.drawActionsOpen }
-          ChessUi.SecondaryButton { text: root.gameStatus === "paused" ? "Resume" : "Pause"; accessibleDescription: root.gameStatus === "paused" ? "Resume the paused game" : "Pause the game"; onClicked: { if (root.gameStatus === "paused") root.invoke(root.service.resumeGame()); else root.invoke(root.pauseCurrentGame("user")) } }
-          ChessUi.SecondaryButton { text: "Resign"; destructive: true; accessibleDescription: "Resign the current game"; onClicked: root.openConfirmation("resign") }
+          ChessUi.SecondaryButton { visible: root.hasPlayableGame; text: "Undo"; accessibleDescription: "Request to take back moves"; onClicked: root.openConfirmation("undo") }
+          ChessUi.SecondaryButton { visible: root.hasPlayableGame; text: "Draw"; selected: root.drawActionsOpen; accessibleDescription: "Open draw actions"; onClicked: root.drawActionsOpen = !root.drawActionsOpen }
+          ChessUi.SecondaryButton { visible: root.hasPlayableGame; text: root.gameStatus === "paused" ? "Resume" : "Pause"; accessibleDescription: root.gameStatus === "paused" ? "Resume the paused game" : "Pause the game"; onClicked: { if (root.gameStatus === "paused") root.invoke(root.service.resumeGame()); else root.invoke(root.pauseCurrentGame("user")) } }
+          ChessUi.SecondaryButton { visible: root.hasPlayableGame; text: "Resign"; destructive: true; accessibleDescription: "Resign the current game"; onClicked: root.openConfirmation("resign") }
           ChessUi.SecondaryButton { visible: !root.compactLayout; text: "Copy PGN"; accessibleDescription: "Copy the current game as PGN"; onClicked: root.invoke(root.service.copyPgn(root.game.game_id), "PGN copied.") }
           ChessUi.SecondaryButton { visible: !root.compactLayout; text: "Save PGN"; accessibleDescription: "Save a PGN copy in the local exports folder"; onClicked: root.invoke(root.service.exportPgn(root.game.game_id, ""), "Saving PGN…") }
         }
@@ -1077,7 +1065,7 @@ Item {
         ColumnLayout {
           Layout.fillWidth: true; visible: root.gameStatus === "completed" && !root.resultDialogDismissed; spacing: 7
           Text { Layout.fillWidth: true; text: root.resultTitle(); color: Color.foreground; font.pixelSize: 17; font.weight: Font.DemiBold; wrapMode: Text.WordWrap }
-          Text { Layout.fillWidth: true; text: (root.game.result && root.game.result.score ? root.game.result.score : "") + " · " + String(root.game.moves ? root.game.moves.length : 0) + " moves"; color: Color.muted; font.pixelSize: 12 }
+          Text { Layout.fillWidth: true; text: (root.game.result && root.game.result.score ? root.game.result.score : "") + " · " + root.moveCountLabel(root.game.moves ? root.game.moves.length : 0); color: Color.muted; font.pixelSize: 12 }
           RowLayout {
             Layout.fillWidth: true
             ChessUi.PrimaryButton { Layout.fillWidth: true; text: "New game"; accessibleDescription: "Set up another game"; onClicked: root.openNewGameDialog(root.game.mode || "computer", ({})) }
@@ -1108,7 +1096,7 @@ Item {
             ColumnLayout {
               Layout.fillWidth: true; spacing: 2
               Text { text: historyRow.modelData.white + " — " + historyRow.modelData.black; color: Color.foreground; font.pixelSize: 14; font.weight: Font.Medium; elide: Text.ElideRight; Layout.fillWidth: true }
-              Text { text: root.titleCase(historyRow.modelData.mode) + " · " + historyRow.modelData.move_count + " moves · " + historyRow.modelData.reason; color: Color.muted; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true }
+              Text { text: root.titleCase(historyRow.modelData.mode) + " · " + root.moveCountLabel(historyRow.modelData.move_count) + " · " + historyRow.modelData.reason; color: Color.muted; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true }
             }
             Text { text: historyRow.modelData.score; color: Color.accent; font.pixelSize: 17; font.weight: Font.DemiBold }
             ChessUi.PrimaryButton {
@@ -1128,7 +1116,19 @@ Item {
           }
         }
       }
-      ChessUi.PrimaryButton { visible: root.hasPlayableGame; text: "Return to active game"; accessibleDescription: "Return to the current game"; onClicked: root.currentView = "game" }
+      RowLayout {
+        Layout.fillWidth: true
+        ChessUi.PrimaryButton { visible: root.hasPlayableGame; text: "Return to active game"; accessibleDescription: "Return to the current game"; onClicked: root.currentView = "game" }
+        Item { Layout.fillWidth: true }
+        ChessUi.SecondaryButton {
+          visible: root.service && root.service.historySummary
+            && root.service.historySummary.total > 0
+          text: "Clear history"
+          destructive: true
+          accessibleDescription: "Clear every completed game after confirmation"
+          onClicked: root.openConfirmation("clear-history")
+        }
+      }
     }
   }
 
@@ -1156,6 +1156,7 @@ Item {
           lastMove: root.replayFrame ? root.replayFrame.last_move : null
           checkedKingSquare: ""
           inputEnabled: false
+          boardTheme: root.boardTheme
           reducedMotion: true
           highContrast: root.service && root.service.settingsSnapshot.accessibility
             ? root.service.settingsSnapshot.accessibility.high_contrast_indicators : false
@@ -1248,9 +1249,33 @@ Item {
         Text { text: "BOARD"; color: Color.muted; font.pixelSize: 11; font.weight: Font.DemiBold }
         RowLayout {
           Layout.fillWidth: true
+          Text { Layout.fillWidth: true; text: "Board style"; color: Color.foreground; font.pixelSize: 13 }
+          Repeater {
+            model: [
+              { id: "charcoal", label: "Charcoal" },
+              { id: "green", label: "Green" },
+              { id: "ivory", label: "Ivory" }
+            ]
+            ChessUi.SecondaryButton {
+              required property var modelData
+              text: modelData.label
+              selected: root.boardTheme === modelData.id
+              accessibleDescription: "Use the " + modelData.label + " chessboard"
+              onClicked: root.updateSetting({ appearance: { board_theme: modelData.id } })
+            }
+          }
+        }
+        RowLayout {
+          Layout.fillWidth: true
           Text { Layout.fillWidth: true; text: "Coordinates"; color: Color.foreground; font.pixelSize: 13 }
           ChessUi.SecondaryButton { text: "Show"; selected: root.service.settingsSnapshot.appearance.coordinates === true; accessibleDescription: "Show board coordinates"; onClicked: root.updateSetting({ appearance: { coordinates: true } }) }
           ChessUi.SecondaryButton { text: "Hide"; selected: root.service.settingsSnapshot.appearance.coordinates === false; accessibleDescription: "Hide board coordinates"; onClicked: root.updateSetting({ appearance: { coordinates: false } }) }
+        }
+        RowLayout {
+          Layout.fillWidth: true
+          Text { Layout.fillWidth: true; text: "Hints"; color: Color.foreground; font.pixelSize: 13 }
+          ChessUi.SecondaryButton { text: "Show"; selected: root.showLegalMoveHints; accessibleDescription: "Show legal destination dots and capture rings"; onClicked: root.updateSetting({ appearance: { show_legal_moves: true } }) }
+          ChessUi.SecondaryButton { text: "Hide"; selected: !root.showLegalMoveHints; accessibleDescription: "Hide legal destination dots and capture rings"; onClicked: root.updateSetting({ appearance: { show_legal_moves: false } }) }
         }
         RowLayout {
           Layout.fillWidth: true
@@ -1366,7 +1391,7 @@ Item {
         }
         ChessUi.StatusBanner { Layout.fillWidth: true; text: "Special moves"; detail: "Castling moves the king and rook together when the path is clear and safe. En passant is offered only on the immediately following move. Promotion lets you choose Queen, Rook, Bishop, or Knight with Q/R/B/N."; kind: "info"; iconText: "♔" }
         ChessUi.StatusBanner { Layout.fillWidth: true; text: "Draws and endings"; detail: "Threefold repetition and the fifty-move rule must be claimed. Stalemate, impossible checkmate, fivefold repetition, and seventy-five moves are automatic. Local players can also agree to a draw."; kind: "info"; iconText: "=" }
-        ChessUi.StatusBanner { Layout.fillWidth: true; text: "Computer levels"; detail: "Learner gives room to practice; Casual spots simple tactics; Challenging searches deeper; Strong uses the largest safe local budget. These are descriptions, not Elo ratings."; kind: "info"; iconText: "♞" }
+        ChessUi.StatusBanner { Layout.fillWidth: true; text: "Computer levels"; detail: "Learner varies safe-looking moves; Casual is steadier; Challenging narrows its choices and thinks longer; Strong adds tactical replies with the largest safe local budget. These are descriptions, not Elo ratings."; kind: "info"; iconText: "♞" }
         ChessUi.StatusBanner { Layout.fillWidth: true; text: "Clocks, saving, and history"; detail: "An increment is added after each legal move. Closing pauses clocks and autosaves. Completed games are archived as portable PGN and can be replayed from History."; kind: "info"; iconText: "◷" }
         ChessUi.StatusBanner { Layout.fillWidth: true; text: "Private and offline"; detail: "No account, network request, telemetry, external chess engine, or cloud storage is used. Game files remain in your XDG state directory."; kind: "info"; iconText: "●" }
         Text { Layout.fillWidth: true; text: "Omarchy Chess " + root.service.pluginVersion + " · MIT License · chess.js 1.4.0 (BSD-2-Clause)\nState: " + root.service.stateDirectory; color: Color.muted; font.pixelSize: 11; wrapMode: Text.WordWrap }

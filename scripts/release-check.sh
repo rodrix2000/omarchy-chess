@@ -35,7 +35,7 @@ root = Path.cwd()
 manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
 assert manifest["schemaVersion"] == 1
 assert manifest["id"] == "io.github.rodrix2000.chess"
-assert manifest["version"] == "1.0.3"
+assert manifest["version"] == "1.0.4"
 assert set(manifest["kinds"]) == {"service", "panel", "bar-widget"}
 version = manifest["version"]
 assert f'var PLUGIN_VERSION = "{version}"' in (root / "engine/GameController.js").read_text(encoding="utf-8")
@@ -102,10 +102,15 @@ fi
 
 asset_hashes() {
   sha256sum assets/icon.svg assets/icon-monochrome.svg assets/icon-256.png \
-    assets/pieces/modern/*.png assets/pieces/SHA256SUMS assets/sounds/*.wav | sort
+    assets/pieces/modern/*.png assets/pieces/SHA256SUMS \
+    assets/boards/*.png assets/boards/SHA256SUMS assets/sounds/*.wav | sort
 }
 before_assets="$(asset_hashes)"
 sha256sum -c assets/pieces/SHA256SUMS >/dev/null
+(
+  cd assets/boards
+  sha256sum -c SHA256SUMS >/dev/null
+)
 python3 assets/generate_assets.py >/dev/null
 python3 scripts/generate-sounds.py >/dev/null
 after_assets="$(asset_hashes)"
@@ -121,8 +126,10 @@ from pathlib import Path
 
 root = Path.cwd()
 pieces = sorted((root / "assets/pieces/modern").glob("*.png"))
+boards = sorted((root / "assets/boards").glob("*.png"))
 sounds = sorted((root / "assets/sounds").glob("*.wav"))
 assert len(pieces) == 12
+assert len(boards) == 3
 assert len(sounds) == 7
 for path in [root / "assets/icon.svg", root / "assets/icon-monochrome.svg"]:
     text = path.read_text(encoding="utf-8")
@@ -146,13 +153,32 @@ for path in pieces:
     width, height, depth, color_type, compression, filtering, interlace = struct.unpack(">IIBBBBB", data[16:29])
     assert (width, height, depth, color_type) == (512, 512, 8, 3), path
     assert (compression, filtering, interlace) == (0, 0, 0), path
+for path in boards:
+    data = path.read_bytes()
+    assert data[:8] == b"\x89PNG\r\n\x1a\n", path
+    position = 8
+    chunks = []
+    while position < len(data):
+        length = struct.unpack(">I", data[position:position + 4])[0]
+        kind = data[position + 4:position + 8]
+        payload = data[position + 8:position + 8 + length]
+        checksum = struct.unpack(">I", data[position + 8 + length:position + 12 + length])[0]
+        assert zlib.crc32(kind + payload) & 0xffffffff == checksum, path
+        chunks.append(kind)
+        position += 12 + length
+    assert position == len(data), path
+    assert chunks[0] == b"IHDR" and chunks[-1] == b"IEND", path
+    assert all(kind in (b"IHDR", b"IDAT", b"IEND") for kind in chunks), (path, chunks)
+    width, height, depth, color_type, compression, filtering, interlace = struct.unpack(">IIBBBBB", data[16:29])
+    assert (width, height, depth, color_type) == (1254, 1254, 8, 2), path
+    assert (compression, filtering, interlace) == (0, 0, 0), path
 for path in sounds:
     with wave.open(str(path), "rb") as wav:
         assert wav.getnchannels() == 1
         assert wav.getsampwidth() == 2
         assert wav.getframerate() == 44100
         assert wav.getnframes() / wav.getframerate() <= 0.5
-print("valid: modern PNG, original SVG, and WAV asset inventory/security")
+print("valid: modern piece PNG, board PNG, original SVG, and WAV asset inventory/security")
 PY
 pass "pinned dependency and reproducible original assets"
 
@@ -173,7 +199,7 @@ tar -C "$ROOT" --exclude=.git --exclude='*.pyc' -cf - . | tar -C "$source_work" 
 git -C "$source_work" init -q -b main
 git -C "$source_work" add .
 git -C "$source_work" -c user.name='Release Check' \
-  -c user.email='release-check@invalid.local' commit -q -m 'v1.0.3 fixture'
+  -c user.email='release-check@invalid.local' commit -q -m 'v1.0.4 fixture'
 git clone -q --bare "$source_work" "$origin_repo"
 
 printf '%s\n' \
@@ -224,4 +250,4 @@ print(f"valid: demo duration {duration:.2f}s")
 PY
 fi
 
-pass "Omarchy Chess v1.0.3 release candidate"
+pass "Omarchy Chess v1.0.4 release candidate"

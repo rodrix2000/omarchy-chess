@@ -53,7 +53,7 @@ Item {
   property int computerSearchBudgetMs: 0
   property int clockCheckpointSeconds: 0
   readonly property string pluginVersion: manifest && manifest.version
-    ? String(manifest.version) : "1.0.3"
+    ? String(manifest.version) : "1.0.4"
   readonly property string stateDirectory: persistenceStore.stateDir
   readonly property bool audioRuntimeEnabled:
     Quickshell.env("OMARCHY_CHESS_DISABLE_AUDIO") !== "1"
@@ -318,6 +318,60 @@ Item {
     return result(true, "HISTORY_REMOVE_STARTED")
   }
 
+  function clearHistory() {
+    var next
+    var started
+    if (!ready) return result(false, "NOT_READY")
+    if (persistenceBusy) return result(false, "PERSISTENCE_BUSY")
+    next = PersistenceModel.clearHistorySummary(historyDocument)
+    if (!next.ok) return result(false, next.code, next.detail)
+    if (next.idempotent) {
+      historyRecord = null
+      replaySnapshot = null
+      rebuildHistorySummary()
+      publishSnapshot()
+      return result(true, "HISTORY_ALREADY_EMPTY")
+    }
+    persistenceBusy = true
+    started = persistenceStore.clearHistory(next.game_ids,
+      PersistenceModel.serialize(next.value), function(clearResult) {
+        persistenceBusy = false
+        if (!clearResult.ok) {
+          if (clearResult.data && clearResult.data.history_updated) {
+            historyDocument = next.value
+            historyRecord = null
+            replaySnapshot = null
+            rebuildHistorySummary()
+          }
+          var clearError = errorEnvelope(clearResult.code,
+            "clear-history", clearResult.detail)
+          clearError.category = "history"
+          lastError = clearError
+          publishSnapshot()
+          historyRecordLoadFailed(clearError)
+          return
+        }
+        historyDocument = next.value
+        historyRecord = null
+        replaySnapshot = null
+        rebuildHistorySummary()
+        publishSnapshot()
+        gameEvent({
+          type: "history-cleared",
+          occurred_at: new Date().toISOString(),
+          game_id: "",
+          payload: { removed_count: next.removed_count }
+        })
+      })
+    if (!started.ok) {
+      persistenceBusy = false
+      return result(false, started.code)
+    }
+    return result(true, "HISTORY_CLEAR_STARTED", "", {
+      removed_count: next.removed_count
+    })
+  }
+
   function pgnForGame(gameId) {
     if ((!gameId || gameId === activeGameId) && gameController
         && gameController.snapshot().status !== "idle")
@@ -504,8 +558,8 @@ Item {
       pgn.charAt(pgn.length - 1) === "\n" ? pgn : pgn + "\n",
       PersistenceModel.serialize(nextHistory),
       function(saveResult) {
-        persistenceBusy = false
         if (!saveResult.ok) {
+          persistenceBusy = false
           failPersistence(saveResult.operation, saveResult.code, saveResult.detail)
           return
         }
@@ -517,7 +571,8 @@ Item {
           game_id: record.game_id,
           payload: { operation: "archive-completed-game" }
         })
-        persistenceStore.clearActive(function(clearResult) {
+        var clearStarted = persistenceStore.clearActive(function(clearResult) {
+          persistenceBusy = false
           if (!clearResult.ok) {
             failPersistence(clearResult.operation, clearResult.code, clearResult.detail)
             return
@@ -531,6 +586,11 @@ Item {
             handleCommand(gameController.newGame(nextOptions), true)
           }
         })
+        if (!clearStarted.ok) {
+          persistenceBusy = false
+          failPersistence("clear-active-game", clearStarted.code,
+            "Completed game was saved but the active record is still present")
+        }
       })
     if (!started.ok)
       failPersistence("archive-completed-game", started.code, "Archive is busy")

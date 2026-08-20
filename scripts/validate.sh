@@ -10,9 +10,10 @@ computer_tmp=""
 history_tmp=""
 abandon_tmp=""
 responsive_tmp=""
+full_game_tmp=""
 cleanup() {
   local path
-  for path in "$service_tmp" "$panel_tmp" "$computer_tmp" "$history_tmp" "$abandon_tmp" "$responsive_tmp"; do
+  for path in "$service_tmp" "$panel_tmp" "$computer_tmp" "$history_tmp" "$abandon_tmp" "$responsive_tmp" "$full_game_tmp"; do
     [[ -z "$path" ]] || rm -rf -- "$path"
   done
 }
@@ -141,6 +142,47 @@ print("valid: QML responsive breakpoint and move smoke")
 PY
 fi
 
+if [[ -n "$quickshell_bin" && -f tests/qml/FullLocalGameSmoke.qml ]]; then
+  full_game_tmp="$(mktemp -d)"
+  mkdir -p "$full_game_tmp/config" "$full_game_tmp/runtime" \
+    "$full_game_tmp/state"
+  chmod 700 "$full_game_tmp/runtime"
+  cp -a "$ROOT/." "$full_game_tmp/config/"
+  cp -a "$omarchy_root/shell/Commons" "$full_game_tmp/config/Commons"
+  cp -a "$omarchy_root/shell/Ui" "$full_game_tmp/config/Ui"
+  cp "$ROOT/tests/qml/FullLocalGameSmoke.qml" \
+    "$full_game_tmp/config/shell.qml"
+  timeout 50s env -u DISPLAY -u WAYLAND_DISPLAY \
+    XDG_RUNTIME_DIR="$full_game_tmp/runtime" \
+    XDG_STATE_HOME="$full_game_tmp/state" \
+    OMARCHY_CHESS_DISABLE_AUDIO=1 \
+    QT_QPA_PLATFORM=minimal QT_QPA_PLATFORMTHEME= \
+    "$quickshell_bin" --no-color -p "$full_game_tmp/config"
+  python3 - "$full_game_tmp/state/omarchy-chess" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+state = Path(sys.argv[1])
+history = json.loads((state / "history.json").read_text(encoding="utf-8"))
+exports = list((state / "exports").glob("*.pgn"))
+records = list((state / "games").glob("*.json"))
+pgns = list((state / "games").glob("*.pgn"))
+assert not (state / "active-game.json").exists()
+assert len(history["games"]) == len(records) == len(pgns) == len(exports) == 1
+completed = json.loads(records[0].read_text(encoding="utf-8"))
+assert completed["status"] == "completed"
+assert len(completed["moves"]) == 33
+assert completed["result"]["score"] == "1-0"
+assert completed["result"]["reason"] == "checkmate"
+assert completed["moves"][22]["san"] == "O-O-O"
+assert completed["moves"][-1]["san"] == "Rd8#"
+pgn = exports[0].read_text(encoding="utf-8")
+assert "O-O-O" in pgn and pgn.rstrip().endswith("Rd8# 1-0")
+print("valid: complete two-player Opera Game, undo, pause, checkmate, replay, and PGN smoke")
+PY
+fi
+
 if [[ -n "$quickshell_bin" && -f tests/qml/ComputerServiceSmoke.qml ]]; then
   computer_tmp="$(mktemp -d)"
   mkdir -p "$computer_tmp/config" "$computer_tmp/runtime" "$computer_tmp/state"
@@ -163,10 +205,11 @@ from pathlib import Path
 
 document = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
 assert document["status"] == "paused"
+assert document["difficulty"] == "strong"
 assert len(document["moves"]) == 2
 assert all(re.fullmatch(r"[a-h][1-8][a-h][1-8][qrbn]?", move["uci"])
            for move in document["moves"])
-print("valid: QML off-thread computer full-move smoke")
+print("valid: QML off-thread learner/challenging/strong comparison smoke")
 PY
 fi
 
@@ -178,7 +221,7 @@ if [[ -n "$quickshell_bin" && -f tests/qml/HistoryServiceSmoke.qml ]]; then
   cp -a "$omarchy_root/shell/Commons" "$history_tmp/config/Commons"
   cp -a "$omarchy_root/shell/Ui" "$history_tmp/config/Ui"
   cp "$ROOT/tests/qml/HistoryServiceSmoke.qml" "$history_tmp/config/shell.qml"
-  timeout 25s env -u DISPLAY -u WAYLAND_DISPLAY \
+  timeout 40s env -u DISPLAY -u WAYLAND_DISPLAY \
     XDG_RUNTIME_DIR="$history_tmp/runtime" \
     XDG_STATE_HOME="$history_tmp/state" \
     OMARCHY_CHESS_DISABLE_AUDIO=1 \
@@ -192,8 +235,11 @@ from pathlib import Path
 state = Path(sys.argv[1])
 history = json.loads((state / "history.json").read_text(encoding="utf-8"))
 settings = json.loads((state / "settings.json").read_text(encoding="utf-8"))
+active = json.loads((state / "active-game.json").read_text(encoding="utf-8"))
 exports = list((state / "exports").glob("*.pgn"))
 assert history["games"] == []
+assert active["status"] == "active-human"
+assert len(active["moves"]) == 1 and active["moves"][0]["uci"] == "e2e4"
 assert settings["appearance"]["coordinates"] is False
 assert settings["audio"]["enabled"] is False
 assert len(exports) == 1
@@ -202,7 +248,7 @@ assert "[Result \"0-1\"]" in pgn
 assert pgn.rstrip().endswith("0-1")
 assert not list((state / "games").glob("*.json"))
 assert not list((state / "games").glob("*.pgn"))
-print("valid: QML history replay/export/settings/removal smoke")
+print("valid: QML history replay/export/settings/removal/clear-all smoke")
 PY
 fi
 

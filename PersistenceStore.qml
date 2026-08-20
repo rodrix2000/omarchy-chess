@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -34,8 +36,13 @@ Item {
   property string archiveRecordText: ""
   property string archivePgnText: ""
   property string archiveHistoryText: ""
+  property var completedJsonWriter: null
+  property var completedPgnWriter: null
   property string removeGameId: ""
   property string removeHistoryText: ""
+  property var clearHistoryGameIds: []
+  property int clearHistoryIndex: 0
+  property string clearHistoryText: ""
   property string exportPath: ""
   property string exportText: ""
 
@@ -58,6 +65,8 @@ Item {
     pendingCallback = null
     pendingOperation = ""
     busy = false
+    if (operation === "archive-completed-game")
+      disposeCompletedWriters()
     if (!ok) operationFailed(operation, code, detail || "")
     if (callback) callback({
       ok: ok === true,
@@ -66,6 +75,17 @@ Item {
       operation: operation,
       data: data || ({})
     })
+  }
+
+  function disposeCompletedWriters() {
+    if (completedJsonWriter) {
+      completedJsonWriter.destroy()
+      completedJsonWriter = null
+    }
+    if (completedPgnWriter) {
+      completedPgnWriter.destroy()
+      completedPgnWriter = null
+    }
   }
 
   function begin(operation, callback) {
@@ -113,9 +133,19 @@ Item {
     archiveRecordText = String(recordText)
     archivePgnText = String(pgnText)
     archiveHistoryText = String(nextHistoryText)
-    completedJsonFile.path = gamesDir + "/" + normalized + ".json"
-    completedPgnFile.path = gamesDir + "/" + normalized + ".pgn"
-    completedJsonFile.setText(archiveRecordText)
+    disposeCompletedWriters()
+    completedJsonWriter = completedJsonWriterComponent.createObject(root, {
+      path: gamesDir + "/" + normalized + ".json"
+    })
+    completedPgnWriter = completedPgnWriterComponent.createObject(root, {
+      path: gamesDir + "/" + normalized + ".pgn"
+    })
+    if (!completedJsonWriter || !completedPgnWriter) {
+      finish(false, "HISTORY_ARCHIVE_FAILED",
+        "Could not create completed-game writers")
+      return ({ ok: false, code: "HISTORY_ARCHIVE_FAILED" })
+    }
+    completedJsonWriter.setText(archiveRecordText)
     return started
   }
 
@@ -160,6 +190,45 @@ Item {
     removeHistoryText = String(nextHistoryText)
     historyFile.setText(removeHistoryText)
     return started
+  }
+
+  function clearHistory(gameIds, nextHistoryText, callback) {
+    var ids = Array.isArray(gameIds) ? gameIds : []
+    var normalized = []
+    var seen = ({})
+    var started
+    var index
+
+    for (index = 0; index < ids.length; index++) {
+      var gameId = safeGameId(ids[index])
+      if (!gameId || seen["$" + gameId])
+        return ({ ok: false, code: "PERSISTENCE_VALIDATION_FAILED" })
+      seen["$" + gameId] = true
+      normalized.push(gameId)
+    }
+    started = begin("clear-history", callback)
+    if (!started.ok) return started
+    clearHistoryGameIds = normalized
+    clearHistoryIndex = 0
+    clearHistoryText = String(nextHistoryText)
+    historyFile.setText(clearHistoryText)
+    return started
+  }
+
+  function removeNextClearedHistoryGame() {
+    if (clearHistoryIndex >= clearHistoryGameIds.length) {
+      finish(true, "HISTORY_CLEARED", "", {
+        removed_count: clearHistoryGameIds.length
+      })
+      return
+    }
+    var gameId = clearHistoryGameIds[clearHistoryIndex]
+    clearHistoryProcess.command = [
+      "rm", "-f", "--",
+      gamesDir + "/" + gameId + ".json",
+      gamesDir + "/" + gameId + ".pgn"
+    ]
+    clearHistoryProcess.running = true
   }
 
   function normalizedExportPath(destination, gameId) {
@@ -263,6 +332,20 @@ Item {
   }
 
   Process {
+    id: clearHistoryProcess
+    onExited: function(exitCode) {
+      if (exitCode !== 0) {
+        root.finish(false, "PERSISTENCE_WRITE_FAILED",
+          "History was cleared but an archived record could not be removed",
+          { history_updated: true })
+        return
+      }
+      root.clearHistoryIndex++
+      root.removeNextClearedHistoryGame()
+    }
+  }
+
+  Process {
     id: quarantineProcess
     onExited: function(exitCode) {
       root.finish(exitCode === 0,
@@ -321,27 +404,32 @@ Item {
         root.finish(true, "GAME_ARCHIVED", "")
       else if (root.pendingOperation === "remove-completed-game")
         removeCompletedProcess.running = true
+      else if (root.pendingOperation === "clear-history")
+        root.removeNextClearedHistoryGame()
     }
     onSaveFailed: function(error) {
       if (root.pendingOperation === "save-history" ||
           root.pendingOperation === "archive-completed-game" ||
-          root.pendingOperation === "remove-completed-game")
+          root.pendingOperation === "remove-completed-game" ||
+          root.pendingOperation === "clear-history")
         root.finish(false, "HISTORY_ARCHIVE_FAILED", String(error))
     }
   }
 
-  FileView {
-    id: completedJsonFile
-    path: ""
-    preload: false
-    watchChanges: false
-    atomicWrites: true
-    printErrors: false
-    onSaved: if (root.pendingOperation === "archive-completed-game")
-      completedPgnFile.setText(root.archivePgnText)
-    onSaveFailed: function(error) {
-      if (root.pendingOperation === "archive-completed-game")
-        root.finish(false, "HISTORY_ARCHIVE_FAILED", String(error))
+  Component {
+    id: completedJsonWriterComponent
+    FileView {
+      preload: false
+      watchChanges: false
+      atomicWrites: true
+      printErrors: false
+      onSaved: if (root.pendingOperation === "archive-completed-game"
+                   && root.completedPgnWriter)
+        root.completedPgnWriter.setText(root.archivePgnText)
+      onSaveFailed: function(error) {
+        if (root.pendingOperation === "archive-completed-game")
+          root.finish(false, "HISTORY_ARCHIVE_FAILED", String(error))
+      }
     }
   }
 
@@ -376,26 +464,27 @@ Item {
     }
   }
 
-  FileView {
-    id: completedPgnFile
-    path: ""
-    preload: false
-    watchChanges: false
-    atomicWrites: true
-    printErrors: false
-    onSaved: {
-      if (root.pendingOperation !== "archive-completed-game") return
-      // FileView does not emit onSaved when setText() is byte-for-byte equal
-      // to its current contents. Archive retries and abandoned games can leave
-      // history unchanged, so finish that no-op stage explicitly.
-      if (historyFile.text() === root.archiveHistoryText)
-        root.finish(true, "GAME_ARCHIVED", "")
-      else
-        historyFile.setText(root.archiveHistoryText)
-    }
-    onSaveFailed: function(error) {
-      if (root.pendingOperation === "archive-completed-game")
-        root.finish(false, "HISTORY_ARCHIVE_FAILED", String(error))
+  Component {
+    id: completedPgnWriterComponent
+    FileView {
+      preload: false
+      watchChanges: false
+      atomicWrites: true
+      printErrors: false
+      onSaved: {
+        if (root.pendingOperation !== "archive-completed-game") return
+        // FileView does not emit onSaved when setText() is byte-for-byte equal
+        // to its current contents. Archive retries and abandoned games can leave
+        // history unchanged, so finish that no-op stage explicitly.
+        if (historyFile.text() === root.archiveHistoryText)
+          root.finish(true, "GAME_ARCHIVED", "")
+        else
+          historyFile.setText(root.archiveHistoryText)
+      }
+      onSaveFailed: function(error) {
+        if (root.pendingOperation === "archive-completed-game")
+          root.finish(false, "HISTORY_ARCHIVE_FAILED", String(error))
+      }
     }
   }
 

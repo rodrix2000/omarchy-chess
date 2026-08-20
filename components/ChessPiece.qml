@@ -22,9 +22,14 @@ Item {
       : ""
   readonly property rect assetBounds: boundsFor(root.pieceColor, root.pieceType)
   readonly property rect whiteTargetBounds: boundsFor("white", root.pieceType)
-  readonly property bool assetReady: asset.status === Image.Ready
+  readonly property bool assetReady: Boolean(asset
+    && asset.status === Image.Ready)
   readonly property real renderedPieceHeight: root.usesBundledPiece
     ? root.height * root.whiteTargetBounds.height / 512 : root.height
+  readonly property real bundledAssetScale: root.usesBundledPiece
+    ? root.renderedPieceHeight / root.assetBounds.height : 1
+  readonly property bool highQualityMinification: !root.usesBundledPiece
+    || (asset.smooth && asset.mipmap)
 
   function boundsFor(colorName, typeName) {
     var bounds = {
@@ -83,16 +88,19 @@ Item {
     id: asset
     x: root.usesBundledPiece
       ? root.width * (root.whiteTargetBounds.x
-        + root.whiteTargetBounds.width / 2) / 512 - width / 2 : 0
+        + root.whiteTargetBounds.width / 2) / 512
+        - (root.assetBounds.x + root.assetBounds.width / 2)
+          * root.bundledAssetScale : 0
     y: root.usesBundledPiece
-      ? root.height * root.whiteTargetBounds.y / 512 : 0
-    width: root.usesBundledPiece
-      ? height * root.assetBounds.width / root.assetBounds.height : root.width
-    height: root.renderedPieceHeight
+      ? root.height * root.whiteTargetBounds.y / 512
+        - root.assetBounds.y * root.bundledAssetScale : 0
+    width: root.usesBundledPiece ? 512 * root.bundledAssetScale : root.width
+    height: root.usesBundledPiece ? 512 * root.bundledAssetScale : root.height
     source: root.resolvedSource
-    sourceClipRect: root.usesBundledPiece ? root.assetBounds : Qt.rect(0, 0, 0, 0)
-    visible: status === Image.Ready
+    visible: root.assetReady
     fillMode: Image.PreserveAspectFit
+    smooth: true
+    mipmap: root.usesBundledPiece
     asynchronous: true
     cache: true
   }

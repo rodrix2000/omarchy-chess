@@ -83,13 +83,23 @@ function localActive(moves = []) {
 test("settings defaults validate and merge without mutating the source", () => {
   const defaults = PersistenceModel.defaultSettings()
   assert.equal(PersistenceModel.validateSettings(defaults).ok, true)
+  assert.equal(defaults.appearance.piece_set, "modern")
+  assert.equal(defaults.appearance.board_theme, "charcoal")
+  assert.equal(defaults.appearance.show_legal_moves, true)
+
+  const legacySettings = PersistenceModel.defaultSettings()
+  delete legacySettings.appearance.board_theme
+  delete legacySettings.appearance.show_legal_moves
+  assert.equal(PersistenceModel.validateSettings(legacySettings).ok, true)
 
   const merged = PersistenceModel.mergeSettingsPatch(defaults, {
+    appearance: { show_legal_moves: false },
     audio: { volume: 0.25 },
     accessibility: { reduced_motion: true }
   })
   assert.equal(merged.ok, true)
   assert.equal(merged.value.audio.volume, 0.25)
+  assert.equal(merged.value.appearance.show_legal_moves, false)
   assert.equal(merged.value.accessibility.reduced_motion, true)
   assert.equal(defaults.audio.volume, 0.65)
 })
@@ -265,6 +275,41 @@ test("history removal is repeat-safe and owned paths reject traversal", () => {
   const validation = PersistenceModel.validateHistory(unsafe)
   assert.equal(validation.ok, false)
   assert.ok(validation.errors.some((error) => error.code === "UNSAFE_PATH"))
+})
+
+test("history clearing returns every owned record ID without mutating history", () => {
+  const firstActive = localActive(["e2e4"])
+  const secondActive = localActive(["d2d4"])
+  secondActive.game_id = "game-0002"
+  const firstRecord = PersistenceModel.createCompletedRecord(firstActive, {
+    score: "1-0",
+    reason: "resignation",
+    finished_at: FINISHED
+  })
+  const secondRecord = PersistenceModel.createCompletedRecord(secondActive, {
+    score: "0-1",
+    reason: "resignation",
+    finished_at: FINISHED
+  })
+  const firstAppend = PersistenceModel.appendHistorySummary(
+    PersistenceModel.defaultHistory(), firstRecord)
+  const secondAppend = PersistenceModel.appendHistorySummary(
+    firstAppend.value, secondRecord)
+  const original = jsonCopy(secondAppend.value)
+
+  const cleared = PersistenceModel.clearHistorySummary(secondAppend.value)
+  assert.equal(cleared.ok, true)
+  assert.equal(cleared.removed_count, 2)
+  assert.deepEqual(cleared.game_ids, [firstRecord.game_id, secondRecord.game_id])
+  assert.deepEqual(cleared.value, PersistenceModel.defaultHistory())
+  assert.equal(PersistenceModel.validateHistory(cleared.value).ok, true)
+  assert.deepEqual(secondAppend.value, original)
+
+  const repeated = PersistenceModel.clearHistorySummary(cleared.value)
+  assert.equal(repeated.ok, true)
+  assert.equal(repeated.idempotent, true)
+  assert.equal(repeated.removed_count, 0)
+  assert.deepEqual(repeated.game_ids, [])
 })
 
 test("history preserves sub-second time controls without inferring final remainders", () => {

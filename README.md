@@ -8,7 +8,7 @@ Play a complete game of chess against the computer or a friend without leaving O
 omarchy plugin add https://github.com/rodrix2000/omarchy-chess.git --enable
 ```
 
-Built for Omarchy 4 with native QML. No account, API key, external engine, telemetry, runtime build, or network connection is needed after installation. [Watch the short demo](demo.mp4).
+Built for Omarchy Quattro (Omarchy 4) with native QML. No account, API key, external engine, telemetry, runtime build, or network connection is needed after installation. [Watch the short demo](demo.mp4).
 
 ## Features
 
@@ -19,7 +19,9 @@ Built for Omarchy 4 with native QML. No account, API key, external engine, telem
 - Untimed play or 5+0, 10+5, and 15+10 clocks
 - Exact autosave, pause-on-close, crash-safe recovery, undo, completed-game history, replay, and PGN export
 - Click, drag, arrow-key, or Vim-style board control
-- Theme-aware surfaces, visible focus, non-color markers, reduced motion, high-contrast indicators, and optional sound
+- Selectable Charcoal, Green, and Ivory textured boards with persisted appearance settings
+- A compact native launcher with active-game context and clear computer or two-player setup paths
+- Theme-aware surfaces, optional legal-move hints, visible focus, non-color markers, reduced motion, high-contrast indicators, and optional sound
 - Original modern piece artwork, reproducible icons, and generated sound assets
 
 ## Install and play

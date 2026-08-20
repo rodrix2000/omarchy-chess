@@ -1,4 +1,4 @@
-# Omarchy Chess v1.0.3
+# Omarchy Chess v1.0.4
 
 Omarchy Chess is a complete native, offline chess game for Omarchy: play a friend locally or choose one of four built-in computer profiles, then close and resume the exact saved position without leaving the shell.
 
@@ -6,21 +6,24 @@ Omarchy Chess is a complete native, offline chess game for Omarchy: play a frien
 
 - Complete orthodox chess rules and FIDE-ordered game endings
 - Local two-player and bounded off-thread computer modes
-- Responsive game layouts keep essential controls visible without overlapping the footer at narrow window sizes
-- The board now grows into available space at medium, default, and wide window sizes
+- Responsive game layouts keep essential controls visible across narrow, medium, default, and wide windows
+- Selectable Charcoal, Green, and Ivory textured boards with verified piece contrast and persisted appearance settings
+- A redesigned compact home launcher with resume context and clearer game-mode setup
+- Optional polished legal-move hints, improved selection treatment, and a warmer check alert
 - Optional clocks, undo, draw, resignation, promotion, and board orientation controls
 - Atomic save/resume, completed-game history, replay, and PGN copy/export
 - Keyboard-complete, theme-aware UI with non-color cues, reduced motion, high contrast, and optional sound
 - Modern black and white pieces now render at matching visible heights for each piece type
-- Updated homepage preview using the same normalized piece component as the game
+- Clearable completed-game history that leaves active games and settings intact
+- Calibrated Learner, Casual, Challenging, and Strong profiles with increasing search work and tactical consistency
 
 ## Compatibility
 
-- Minimum tested line: Omarchy 4
+- Minimum tested line: Omarchy Quattro (Omarchy 4)
 - Verified environment: Omarchy `4.0.0-1`, Quickshell `0.3.0.r20.g28771c7`, Qt `6.11.1`
 - State/settings/history/completed-game schema: `1`
 - Rules dependency: `chess.js` `1.4.0`, BSD-2-Clause
-- No migration is required from v1.0.0, v1.0.1, or v1.0.2
+- No migration is required from v1.0.0 through v1.0.3
 
 ## Install
 
@@ -52,8 +55,7 @@ Game state remains under `${XDG_STATE_HOME:-$HOME/.local/state}/omarchy-chess` w
 
 - No online play, accounts, cloud sync, variants, or chat in V1
 - Computer profiles are descriptive, not Elo ratings or a professional analysis engine
-- Public GitHub installation is verified; Omarchy marketplace submission is a
-  separate publication step
+- Marketplace validation and listing are separate from the public GitHub release
 
 ## Credits and licenses
 

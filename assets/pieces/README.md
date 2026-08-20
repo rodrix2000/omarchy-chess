@@ -10,6 +10,8 @@ The renderer uses the audited nontransparent bounds of each master to remove
 uneven canvas padding at display time. Each black piece is fitted to the visible
 height and vertical placement of its matching white piece; the canonical PNGs
 remain unchanged and retain their original geometry and checksums.
+The full transparent canvas remains available to the texture sampler and uses
+mipmapped minification, keeping thin outlines continuous on smaller boards.
 
 The PNGs contain only the standard `IHDR`, `PLTE`, `tRNS`, `IDAT`, and `IEND`
 chunks—no text metadata, scripts, URLs, fonts, or external references. If a

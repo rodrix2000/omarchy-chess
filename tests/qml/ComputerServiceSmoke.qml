@@ -9,9 +9,21 @@ Item {
   property int phase: 0
   property int attempts: 0
   property bool observedThinking: false
+  property int round: 0
+  property var levels: ["learner", "challenging", "strong"]
+  property var lastMetrics: null
+  property var metricsByLevel: ({})
+  property var budgetsByLevel: ({})
 
   ChessPlugin.Service {
     id: service
+    onComputerSearchStarted: function(search) {
+      root.budgetsByLevel[search.profile.id] = search.budget_ms
+    }
+    onComputerSearchFinished: function(result) {
+      root.lastMetrics = result
+      root.metricsByLevel[result.profile_id] = result
+    }
   }
 
   function require(condition, message) {
@@ -30,7 +42,7 @@ Item {
 
     onTriggered: {
       root.attempts++
-      if (root.attempts > 600) {
+      if (root.attempts > 1600) {
         running = false
         throw new Error("Computer service smoke timed out in phase " + root.phase
           + " status=" + service.snapshot.status + " thinking="
@@ -41,7 +53,7 @@ Item {
         var created = service.newGame({
           mode: "computer",
           human_color: "white",
-          difficulty: "casual",
+          difficulty: root.levels[root.round],
           time_control: { base_ms: null, increment_ms: 0 }
         })
         root.require(created.ok, "computer game failed: " + created.code)
@@ -57,13 +69,53 @@ Item {
           root.require(root.observedThinking, "computer search never published thinking state")
           root.require(service.snapshot.status === "active-human",
             "computer reply did not return control to the human")
+          root.require(root.lastMetrics !== null,
+            "computer reply did not publish search metrics")
+          root.require(root.lastMetrics.profile_id === root.levels[root.round],
+            "computer reply used the wrong difficulty profile")
+          root.require(root.lastMetrics.depth >= 1,
+            "normal computer search did not complete its first pass")
           root.require(service.snapshot.moves[1].uci.length >= 4,
             "computer reply did not publish legal UCI")
-          var paused = service.pauseGame("computer-service-smoke")
-          root.require(paused.ok, "computer game did not pause")
-          root.phase = 3
+          if (root.round < root.levels.length - 1) {
+            root.round++
+            root.lastMetrics = null
+            root.observedThinking = false
+            var replaced = service.newGame({
+              mode: "computer",
+              human_color: "white",
+              difficulty: root.levels[root.round],
+              time_control: { base_ms: null, increment_ms: 0 },
+              conflict: "abandon"
+            })
+            root.require(replaced.ok,
+              "difficulty comparison game failed: " + replaced.code)
+            root.phase = 3
+          } else {
+            var learner = root.metricsByLevel.learner
+            var challenging = root.metricsByLevel.challenging
+            var strong = root.metricsByLevel.strong
+            root.require(root.budgetsByLevel.learner
+              < root.budgetsByLevel.challenging
+              && root.budgetsByLevel.challenging < root.budgetsByLevel.strong,
+              "difficulty budgets did not increase")
+            root.require(learner.nodes < challenging.nodes
+              && challenging.nodes < strong.nodes,
+              "difficulty search work did not increase")
+            root.require(learner.depth <= challenging.depth
+              && challenging.depth <= strong.depth,
+              "completed search depth regressed at a harder level")
+            var paused = service.pauseGame("computer-service-smoke")
+            root.require(paused.ok, "computer game did not pause")
+            root.phase = 4
+          }
         }
-      } else if (root.phase === 3 && !service.persistenceBusy) {
+      } else if (root.phase === 3 && !service.persistenceBusy
+                 && service.snapshot.mode === "computer"
+                 && service.snapshot.difficulty === root.levels[root.round]
+                 && service.snapshot.moves.length === 0) {
+        root.phase = 1
+      } else if (root.phase === 4 && !service.persistenceBusy) {
         root.require(service.snapshot.status === "paused", "paused state was not saved")
         running = false
         Qt.quit()
