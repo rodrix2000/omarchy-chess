@@ -1199,7 +1199,8 @@ Item {
         ChessUi.StatusBanner {
           Layout.fillWidth: true
           text: "Local diagnostics"
-          detail: "Plugin 1.0.0 · chess.js 1.4.0 · state schema 1\n"
+          detail: "Plugin " + root.service.pluginVersion
+            + " · chess.js 1.4.0 · state schema 1\n"
             + root.service.stateDirectory + "\nAI worker: "
             + (root.service.computerThinking ? "searching" : "idle")
             + (root.service.lastError ? " · " + root.service.lastError.code : "")
@@ -1253,7 +1254,7 @@ Item {
         ChessUi.StatusBanner { Layout.fillWidth: true; text: "Computer levels"; detail: "Learner gives room to practice; Casual spots simple tactics; Challenging searches deeper; Strong uses the largest safe local budget. These are descriptions, not Elo ratings."; kind: "info"; iconText: "♞" }
         ChessUi.StatusBanner { Layout.fillWidth: true; text: "Clocks, saving, and history"; detail: "An increment is added after each legal move. Closing pauses clocks and autosaves. Completed games are archived as portable PGN and can be replayed from History."; kind: "info"; iconText: "◷" }
         ChessUi.StatusBanner { Layout.fillWidth: true; text: "Private and offline"; detail: "No account, network request, telemetry, external chess engine, or cloud storage is used. Game files remain in your XDG state directory."; kind: "info"; iconText: "●" }
-        Text { Layout.fillWidth: true; text: "Omarchy Chess 1.0.0 · MIT License · chess.js 1.4.0 (BSD-2-Clause)\nState: " + root.service.stateDirectory; color: Color.muted; font.pixelSize: 11; wrapMode: Text.WordWrap }
+        Text { Layout.fillWidth: true; text: "Omarchy Chess " + root.service.pluginVersion + " · MIT License · chess.js 1.4.0 (BSD-2-Clause)\nState: " + root.service.stateDirectory; color: Color.muted; font.pixelSize: 11; wrapMode: Text.WordWrap }
         Item { Layout.fillHeight: true }
         RowLayout {
           ChessUi.PrimaryButton { visible: root.hasPlayableGame; text: "Return to game"; accessibleDescription: "Return to the active chess game"; onClicked: root.currentView = "game" }

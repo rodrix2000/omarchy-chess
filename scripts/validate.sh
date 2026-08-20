@@ -8,9 +8,10 @@ service_tmp=""
 panel_tmp=""
 computer_tmp=""
 history_tmp=""
+abandon_tmp=""
 cleanup() {
   local path
-  for path in "$service_tmp" "$panel_tmp" "$computer_tmp" "$history_tmp"; do
+  for path in "$service_tmp" "$panel_tmp" "$computer_tmp" "$history_tmp" "$abandon_tmp"; do
     [[ -z "$path" ]] || rm -rf -- "$path"
   done
 }
@@ -173,6 +174,45 @@ assert pgn.rstrip().endswith("0-1")
 assert not list((state / "games").glob("*.json"))
 assert not list((state / "games").glob("*.pgn"))
 print("valid: QML history replay/export/settings/removal smoke")
+PY
+fi
+
+if [[ -n "$quickshell_bin" && -f tests/qml/AbandonArchiveSmoke.qml ]]; then
+  abandon_tmp="$(mktemp -d)"
+  mkdir -p "$abandon_tmp/config" "$abandon_tmp/runtime" \
+    "$abandon_tmp/state/omarchy-chess/games"
+  chmod 700 "$abandon_tmp/runtime"
+  cp -a "$ROOT/." "$abandon_tmp/config/"
+  cp -a "$omarchy_root/shell/Commons" "$abandon_tmp/config/Commons"
+  cp -a "$omarchy_root/shell/Ui" "$abandon_tmp/config/Ui"
+  cp "$ROOT/tests/qml/AbandonArchiveSmoke.qml" "$abandon_tmp/config/shell.qml"
+  cp "$ROOT/tests/fixtures/empty-history.json" \
+    "$abandon_tmp/state/omarchy-chess/history.json"
+  cp "$ROOT/tests/fixtures/abandoned-active-game.json" \
+    "$abandon_tmp/state/omarchy-chess/active-game.json"
+  cp "$ROOT/tests/fixtures/abandoned-completed-game.json" \
+    "$abandon_tmp/state/omarchy-chess/games/fixture-abandoned-restore.json"
+  cp "$ROOT/tests/fixtures/abandoned-completed-game.pgn" \
+    "$abandon_tmp/state/omarchy-chess/games/fixture-abandoned-restore.pgn"
+  timeout 20s env -u DISPLAY -u WAYLAND_DISPLAY \
+    XDG_RUNTIME_DIR="$abandon_tmp/runtime" \
+    XDG_STATE_HOME="$abandon_tmp/state" \
+    OMARCHY_CHESS_DISABLE_AUDIO=1 \
+    QT_QPA_PLATFORM=minimal QT_QPA_PLATFORMTHEME= \
+    "$quickshell_bin" --no-color -p "$abandon_tmp/config"
+  python3 - "$abandon_tmp/state/omarchy-chess" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+state = Path(sys.argv[1])
+active = json.loads((state / "active-game.json").read_text(encoding="utf-8"))
+history = json.loads((state / "history.json").read_text(encoding="utf-8"))
+assert active["status"] == "active-human"
+assert history["games"] == []
+assert len(list((state / "games").glob("*.json"))) == 1
+assert len(list((state / "games").glob("*.pgn"))) == 1
+print("valid: unchanged-history abandoned-game archive smoke")
 PY
 fi
 

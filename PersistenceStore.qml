@@ -383,8 +383,16 @@ Item {
     watchChanges: false
     atomicWrites: true
     printErrors: false
-    onSaved: if (root.pendingOperation === "archive-completed-game")
-      historyFile.setText(root.archiveHistoryText)
+    onSaved: {
+      if (root.pendingOperation !== "archive-completed-game") return
+      // FileView does not emit onSaved when setText() is byte-for-byte equal
+      // to its current contents. Archive retries and abandoned games can leave
+      // history unchanged, so finish that no-op stage explicitly.
+      if (historyFile.text() === root.archiveHistoryText)
+        root.finish(true, "GAME_ARCHIVED", "")
+      else
+        historyFile.setText(root.archiveHistoryText)
+    }
     onSaveFailed: function(error) {
       if (root.pendingOperation === "archive-completed-game")
         root.finish(false, "HISTORY_ARCHIVE_FAILED", String(error))

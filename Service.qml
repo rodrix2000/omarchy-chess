@@ -52,6 +52,8 @@ Item {
   property var activeSearchContext: null
   property int computerSearchBudgetMs: 0
   property int clockCheckpointSeconds: 0
+  readonly property string pluginVersion: manifest && manifest.version
+    ? String(manifest.version) : "1.0.2"
   readonly property string stateDirectory: persistenceStore.stateDir
   readonly property bool audioRuntimeEnabled:
     Quickshell.env("OMARCHY_CHESS_DISABLE_AUDIO") !== "1"
@@ -173,7 +175,7 @@ Item {
 
   function diagnosticSnapshot() {
     return {
-      plugin_version: manifest && manifest.version ? String(manifest.version) : "1.0.0",
+      plugin_version: pluginVersion,
       rules_version: "chess.js 1.4.0",
       state_schema: 1,
       settings_schema: 1,
@@ -1122,7 +1124,10 @@ Item {
         PgnMetadata: PgnMetadata
       })
       rulesAdapter = RulesAdapter.create({})
-      gameController = GameController.create({ autostart: false })
+      gameController = GameController.create({
+        autostart: false,
+        pluginVersion: root.pluginVersion
+      })
       rulesReady = rulesAdapter && rulesAdapter.valid === true
       persistenceStore.initialize()
     } catch (error) {
