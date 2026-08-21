@@ -4,10 +4,18 @@ All notable user-visible and compatibility changes are recorded here.
 
 ## [Unreleased]
 
+## [1.0.5] — 2026-08-21
+
 ### Fixed
 
+- Rendered stored player names as plain text so crafted names cannot be interpreted as rich text or initiate resource requests
 - Prevented valid computer searches from being falsely failed by a UI watchdog that was shorter than the engine's guaranteed first search pass
 - Described an AI failure as preserving an untimed game instead of claiming that a nonexistent clock was paused
+
+### Compatibility
+
+- No active-game, completed-game, history, or settings schema migration is required
+- Existing `1.0.0` through `1.0.4` state resumes without migration
 
 ## [1.0.4] — 2026-08-20
 
@@ -121,6 +129,7 @@ All notable user-visible and compatibility changes are recorded here.
 - No migration is needed for the first public release
 - Runtime dependency: the Omarchy/Quickshell environment only; no user-installed engine or build tool
 
+[1.0.5]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.5
 [1.0.4]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.4
 [1.0.3]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.3
 [1.0.2]: https://github.com/rodrix2000/omarchy-chess/releases/tag/v1.0.2

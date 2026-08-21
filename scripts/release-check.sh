@@ -35,7 +35,7 @@ root = Path.cwd()
 manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
 assert manifest["schemaVersion"] == 1
 assert manifest["id"] == "io.github.rodrix2000.chess"
-assert manifest["version"] == "1.0.4"
+assert manifest["version"] == "1.0.5"
 assert set(manifest["kinds"]) == {"service", "panel", "bar-widget"}
 version = manifest["version"]
 assert f'var PLUGIN_VERSION = "{version}"' in (root / "engine/GameController.js").read_text(encoding="utf-8")
@@ -199,7 +199,7 @@ tar -C "$ROOT" --exclude=.git --exclude='*.pyc' -cf - . | tar -C "$source_work" 
 git -C "$source_work" init -q -b main
 git -C "$source_work" add .
 git -C "$source_work" -c user.name='Release Check' \
-  -c user.email='release-check@invalid.local' commit -q -m 'v1.0.4 fixture'
+  -c user.email='release-check@invalid.local' commit -q -m 'v1.0.5 fixture'
 git clone -q --bare "$source_work" "$origin_repo"
 
 printf '%s\n' \
@@ -250,4 +250,4 @@ print(f"valid: demo duration {duration:.2f}s")
 PY
 fi
 
-pass "Omarchy Chess v1.0.4 release candidate"
+pass "Omarchy Chess v1.0.5 release candidate"
