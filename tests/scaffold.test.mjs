@@ -39,6 +39,17 @@ test("panel exposes the Omarchy open, close, and opened contract", async () => {
   assert.match(panel, /forceActiveFocus\(\)/)
 })
 
+test("panel renders stored player names as plain text", async () => {
+  const panel = await text("Panel.qml")
+  const textItems = panel.match(/Text\s*\{[^{}]*\}/gs) ?? []
+  const playerNameItems = textItems.filter((item) =>
+    /players[^{}]*\.name|modelData\.(?:white|black)/s.test(item))
+
+  assert.equal(playerNameItems.length, 6)
+  for (const item of playerNameItems)
+    assert.match(item, /textFormat:\s*Text\.PlainText/)
+})
+
 test("service is headless and bar resolves it through the host", async () => {
   const [service, bar] = await Promise.all([
     text("Service.qml"),
