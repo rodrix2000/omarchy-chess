@@ -950,6 +950,7 @@ Item {
               text: root.game.players
                 ? root.game.players[root.boardOrientation === "white" ? "black" : "white"].name
                 : "Opponent"
+              textFormat: Text.PlainText
               color: Color.foreground
               font.pixelSize: 15
               font.weight: Font.Medium
@@ -969,6 +970,7 @@ Item {
             Text {
               Layout.fillWidth: true
               text: root.game.players ? root.game.players[root.boardOrientation].name : "Player"
+              textFormat: Text.PlainText
               color: Color.foreground
               font.pixelSize: 15
               font.weight: Font.Medium
@@ -987,7 +989,7 @@ Item {
         RowLayout {
           Layout.fillWidth: true
           visible: !root.compactLayout
-          Text { Layout.fillWidth: true; text: root.game.players ? root.game.players[root.boardOrientation === "white" ? "black" : "white"].name : "Opponent"; color: Color.foreground; font.pixelSize: 15; font.weight: Font.Medium; elide: Text.ElideRight }
+          Text { Layout.fillWidth: true; text: root.game.players ? root.game.players[root.boardOrientation === "white" ? "black" : "white"].name : "Opponent"; textFormat: Text.PlainText; color: Color.foreground; font.pixelSize: 15; font.weight: Font.Medium; elide: Text.ElideRight }
           ChessUi.PlayerClock {
             side: root.boardOrientation === "white" ? "black" : "white"
             remainingMs: root.game.clock && root.game.clock.enabled ? root.game.clock[(root.boardOrientation === "white" ? "black" : "white") + "_ms"] : -1
@@ -1036,7 +1038,7 @@ Item {
         RowLayout {
           Layout.fillWidth: true
           visible: !root.compactLayout
-          Text { Layout.fillWidth: true; text: root.game.players ? root.game.players[root.boardOrientation].name : "Player"; color: Color.foreground; font.pixelSize: 15; font.weight: Font.Medium; elide: Text.ElideRight }
+          Text { Layout.fillWidth: true; text: root.game.players ? root.game.players[root.boardOrientation].name : "Player"; textFormat: Text.PlainText; color: Color.foreground; font.pixelSize: 15; font.weight: Font.Medium; elide: Text.ElideRight }
           ChessUi.PlayerClock {
             side: root.boardOrientation
             remainingMs: root.game.clock && root.game.clock.enabled ? root.game.clock[root.boardOrientation + "_ms"] : -1
@@ -1095,7 +1097,7 @@ Item {
             anchors.fill: parent; anchors.margins: 12
             ColumnLayout {
               Layout.fillWidth: true; spacing: 2
-              Text { text: historyRow.modelData.white + " — " + historyRow.modelData.black; color: Color.foreground; font.pixelSize: 14; font.weight: Font.Medium; elide: Text.ElideRight; Layout.fillWidth: true }
+              Text { text: historyRow.modelData.white + " — " + historyRow.modelData.black; textFormat: Text.PlainText; color: Color.foreground; font.pixelSize: 14; font.weight: Font.Medium; elide: Text.ElideRight; Layout.fillWidth: true }
               Text { text: root.titleCase(historyRow.modelData.mode) + " · " + root.moveCountLabel(historyRow.modelData.move_count) + " · " + historyRow.modelData.reason; color: Color.muted; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true }
             }
             Text { text: historyRow.modelData.score; color: Color.accent; font.pixelSize: 17; font.weight: Font.DemiBold }
@@ -1184,6 +1186,7 @@ Item {
               Layout.fillWidth: true
               text: root.replayData ? root.replayData.record.players.white.name
                 + " — " + root.replayData.record.players.black.name : "Saved game"
+              textFormat: Text.PlainText
               color: Color.foreground
               font.pixelSize: 16
               font.weight: Font.DemiBold
