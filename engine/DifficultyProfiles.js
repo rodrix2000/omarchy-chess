@@ -180,6 +180,27 @@ function clockAwareBudget(profileInput, remainingMs, incrementMs) {
   return Math.max(10, Math.floor(Math.min(profile.budget_ms, clockBudget)))
 }
 
+function hardResponseDeadline(profileInput, budgetMs) {
+  var profile = resolveProfile(profileInput)
+  var budget
+
+  if (!profile)
+    return null
+  budget = finiteProfileNumber(budgetMs)
+    ? Math.max(1, Math.min(PROFILE_LIMITS.budget_ms.max, Math.floor(budgetMs)))
+    : profile.budget_ms
+
+  /* SearchEngine guarantees a complete first depth for normal budgets, even
+   * when that pass outlives the soft think-time budget. QML's JavaScript
+   * worker is slower than the Node test runtime, so the service watchdog must
+   * leave enough room for that documented pass before treating the worker as
+   * unresponsive. Emergency clock budgets skip the guarantee and keep the
+   * shorter watchdog. */
+  if (budget < 80)
+    return Math.max(750, budget + 600)
+  return Math.max(5000, budget * 3 + 600)
+}
+
 function namedProfiles() {
   return [
     profileClone(PROFILE_DEFINITIONS.learner),
@@ -193,6 +214,7 @@ var DifficultyProfiles = {
   resolve: resolveProfile,
   isKnown: isKnownProfile,
   clockAwareBudget: clockAwareBudget,
+  hardResponseDeadline: hardResponseDeadline,
   named: namedProfiles,
   limits: profileClone(PROFILE_LIMITS)
 }

@@ -732,7 +732,7 @@ Item {
     computerThinking = true
     publishSnapshot()
     computerSearchStarted(request)
-    computerWatchdog.interval = Math.max(750, budget + 600)
+    computerWatchdog.interval = DifficultyProfiles.hardResponseDeadline(profile, budget)
     computerWatchdog.restart()
     aiWorker.sendMessage(request)
     return true

@@ -59,6 +59,8 @@ Item {
     || confirmDialog.opened
   readonly property bool aiError: game.save_error
     && game.save_error.category === "ai"
+  readonly property bool gameClockEnabled: game.clock
+    && game.clock.enabled === true
   readonly property var replayData: service && service.replaySnapshot
     ? service.replaySnapshot : null
   readonly property var replayFrame: replayData && replayData.frames
@@ -686,7 +688,10 @@ Item {
             text: root.aiError ? "The computer could not finish its move"
               : root.game.persistence_healthy === false ? "Your game could not be saved"
               : root.payloadNotice || root.actionNotice
-            detail: root.aiError ? "The clock is paused and your game is safe. Retry, use an easier level, or continue as a local game."
+            detail: root.aiError
+              ? (root.gameClockEnabled
+                ? "The clock is paused and your game is safe. Retry, use an easier level, or continue as a local game."
+                : "Your untimed game is safe. Retry, use an easier level, or continue as a local game.")
               : root.game.persistence_healthy === false ? "The game is paused and safe in memory. Retry saving before continuing." : ""
             kind: root.game.persistence_healthy === false || root.aiError ? "error" : "info"
             iconText: root.game.persistence_healthy === false || root.aiError ? "!" : "i"

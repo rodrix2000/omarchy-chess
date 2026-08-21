@@ -50,6 +50,14 @@ test("panel renders stored player names as plain text", async () => {
     assert.match(item, /textFormat:\s*Text\.PlainText/)
 })
 
+test("computer failure copy distinguishes untimed games from paused clocks", async () => {
+  const panel = await text("Panel.qml")
+
+  assert.match(panel, /readonly property bool gameClockEnabled:/)
+  assert.match(panel, /Your untimed game is safe\./)
+  assert.match(panel, /root\.gameClockEnabled\s*\? "The clock is paused/)
+})
+
 test("service is headless and bar resolves it through the host", async () => {
   const [service, bar] = await Promise.all([
     text("Service.qml"),
@@ -59,6 +67,13 @@ test("service is headless and bar resolves it through the host", async () => {
   assert.doesNotMatch(service, /FloatingWindow/)
   assert.match(bar, /serviceFor\(moduleName\)/)
   assert.doesNotMatch(bar, /Service\s*\{/)
+})
+
+test("service derives its worker watchdog from the search profile contract", async () => {
+  const service = await text("Service.qml")
+
+  assert.match(service,
+    /computerWatchdog\.interval\s*=\s*DifficultyProfiles\.hardResponseDeadline\(profile, budget\)/)
 })
 
 test("root entry points contain no browser or network stack", async () => {

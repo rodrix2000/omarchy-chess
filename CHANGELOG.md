@@ -4,6 +4,11 @@ All notable user-visible and compatibility changes are recorded here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Prevented valid computer searches from being falsely failed by a UI watchdog that was shorter than the engine's guaranteed first search pass
+- Described an AI failure as preserving an untimed game instead of claiming that a nonexistent clock was paused
+
 ## [1.0.4] — 2026-08-20
 
 ### Fixed

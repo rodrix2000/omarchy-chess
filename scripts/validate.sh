@@ -7,13 +7,14 @@ cd "$ROOT"
 service_tmp=""
 panel_tmp=""
 computer_tmp=""
+computer_deadline_tmp=""
 history_tmp=""
 abandon_tmp=""
 responsive_tmp=""
 full_game_tmp=""
 cleanup() {
   local path
-  for path in "$service_tmp" "$panel_tmp" "$computer_tmp" "$history_tmp" "$abandon_tmp" "$responsive_tmp" "$full_game_tmp"; do
+  for path in "$service_tmp" "$panel_tmp" "$computer_tmp" "$computer_deadline_tmp" "$history_tmp" "$abandon_tmp" "$responsive_tmp" "$full_game_tmp"; do
     [[ -z "$path" ]] || rm -rf -- "$path"
   done
 }
@@ -86,6 +87,24 @@ assert document["status"] == "paused"
 assert [move["uci"] for move in document["moves"]] == ["e2e4"]
 print("valid: QML service persistence smoke")
 PY
+fi
+
+if [[ -n "$quickshell_bin" && -f tests/qml/ComputerDeadlineRegression.qml ]]; then
+  computer_deadline_tmp="$(mktemp -d)"
+  mkdir -p "$computer_deadline_tmp/config" "$computer_deadline_tmp/runtime" \
+    "$computer_deadline_tmp/state"
+  chmod 700 "$computer_deadline_tmp/runtime"
+  cp -a "$ROOT/." "$computer_deadline_tmp/config/"
+  cp -a "$omarchy_root/shell/Commons" "$computer_deadline_tmp/config/Commons"
+  cp -a "$omarchy_root/shell/Ui" "$computer_deadline_tmp/config/Ui"
+  cp "$ROOT/tests/qml/ComputerDeadlineRegression.qml" \
+    "$computer_deadline_tmp/config/shell.qml"
+  timeout 10s env -u DISPLAY -u WAYLAND_DISPLAY \
+    XDG_RUNTIME_DIR="$computer_deadline_tmp/runtime" \
+    XDG_STATE_HOME="$computer_deadline_tmp/state" \
+    OMARCHY_CHESS_DISABLE_AUDIO=1 \
+    QT_QPA_PLATFORM=minimal QT_QPA_PLATFORMTHEME= \
+    "$quickshell_bin" --no-color -p "$computer_deadline_tmp/config"
 fi
 
 if [[ -n "$quickshell_bin" && -f tests/qml/PanelSmoke.qml ]]; then

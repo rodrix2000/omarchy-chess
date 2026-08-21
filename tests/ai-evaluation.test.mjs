@@ -49,6 +49,13 @@ test("clock-aware budget keeps the documented reserve formula and floor", () => 
   assert.equal(DifficultyProfiles.clockAwareBudget("learner", 300, 2000), 150)
 })
 
+test("worker deadline allows a normal first pass but keeps emergency budgets short", () => {
+  assert.equal(DifficultyProfiles.hardResponseDeadline("casual", 325), 5000)
+  assert.equal(DifficultyProfiles.hardResponseDeadline("strong", 1600), 5400)
+  assert.equal(DifficultyProfiles.hardResponseDeadline("strong", 30), 750)
+  assert.equal(DifficultyProfiles.hardResponseDeadline("unknown", 325), null)
+})
+
 test("evaluation is side-to-move relative and material has the correct sign", () => {
   const whiteToMove = rules("4k3/8/8/8/8/8/Q7/4K3 w - - 0 1")
   const blackToMove = rules("4k3/8/8/8/8/8/Q7/4K3 b - - 0 1")
